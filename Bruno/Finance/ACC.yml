@@ -1,0 +1,26 @@
+info:
+  name: ACC
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:8000/api/finance/verifications/01a0bde4-607a-7117-87a3-e1b054385a62
+  body:
+    type: json
+    data: |-
+      {
+          "is_valid": true,
+          "advance_payment": 2500000,
+          "notes": "Dana dicairkan untuk tiket kereta dan penginapan sesuai SBM."
+      }
+  auth:
+    type: bearer
+    token: 4|3AHE9cwlFngyUs3RwTsXKmrCc4T71GHXKOZ5hRFzd47cae03
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

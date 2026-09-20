@@ -1,0 +1,25 @@
+info:
+  name: Approval
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/approvals/01a0bde4-607a-7117-87a3-e1b054385a62/decision
+  body:
+    type: json
+    data: |-
+      {
+          "decision": "Disetujui",
+          "notes": "Lanjutkan proses perjalanan dinas ini."
+      }
+  auth:
+    type: bearer
+    token: 2|CZwMqxihGslwYw0D9VPnGyLcTalwhcGDe5H1HktIf5bb3509
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

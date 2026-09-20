@@ -1,0 +1,31 @@
+info:
+  name: Logistik
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8000/api/travel-admin/01a0bde4-607a-7117-87a3-e1b054385a62/logistics
+  headers:
+    - name: Accept
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+          "transport_type": "Kereta Api Eksekutif",
+          "booking_code_or_ticket": "KAI-987654321A",
+          "hotel_name": "Hotel Santika Premiere",
+          "departure_datetime": "2026-10-10 08:00:00",
+          "return_datetime": "2026-10-12 15:00:00"
+      }
+  auth:
+    type: bearer
+    token: 3|Q4SUQ2hViEAz1Njz8PAbTdiBk2YLnlRXpiEqmOwxc902376d
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

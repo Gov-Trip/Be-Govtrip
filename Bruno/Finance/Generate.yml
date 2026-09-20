@@ -1,0 +1,18 @@
+info:
+  name: Generate
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: http://localhost:8000/api/finance/verifications/01a0bde4-607a-7117-87a3-e1b054385a62/lpj/download
+  auth:
+    type: bearer
+    token: 4|3AHE9cwlFngyUs3RwTsXKmrCc4T71GHXKOZ5hRFzd47cae03
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

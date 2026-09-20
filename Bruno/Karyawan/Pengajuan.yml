@@ -1,0 +1,32 @@
+info:
+  name: Pengajuan
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/travel-requests
+  headers:
+    - name: Accept
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+          "origin_city_id": 1,
+          "destination_city_id": 2,
+          "start_date": "2026-10-10",
+          "end_date": "2026-10-12",
+          "purpose": "Kunjungan Lapangan serta rapat",
+          "status": "Menunggu Atasan"
+      }
+  auth:
+    type: bearer
+    token: 1|Ws1SKIfaiRj1P5Kcodb90rz7zL8kTBtdFu1Wn50u0055c92e
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

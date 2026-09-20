@@ -1,0 +1,136 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\FinanceVerifyRequest;
+use App\Services\FinanceService;
+use App\Models\TravelRequest;
+use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Exception;
+
+class FinanceController extends Controller
+{
+    protected FinanceService $financeService;
+
+    public function __construct(FinanceService $financeService)
+    {
+        $this->financeService = $financeService;
+    }
+
+    // 1. Tampilkan antrean SPJ yang minta diverifikasi
+    public function index(Request $request)
+    {
+        $status = $request->query('status', 'Siap Berangkat');
+
+        $queue = TravelRequest::with(['requester', 'destinationCity'])
+            ->where('status', $status)
+            ->latest()
+            ->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $queue
+        ]);
+    }
+
+    // SHOW: Detail "Stopmap" lengkap sebelum mencairkan dana
+    public function show($id)
+    {
+        $travelRequest = TravelRequest::with([
+            'requester.department', 
+            'originCity', 
+            'destinationCity',
+            'approvals.approver', 
+            'logistics' // Finance WAJIB melihat tiket dan harga hotel sebelum mencairkan uang!
+        ])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $travelRequest
+        ]);
+    }
+
+    // 2. Verifikasi nota & laporan (ACC / Revisi)
+    public function verify(FinanceVerifyRequest $request, $id)
+    {
+        try {
+            $travelRequest = TravelRequest::findOrFail($id);
+            // $this->authorize('verify', $travelRequest); // Cek Policy bentrok kepentingan
+
+            $result = $this->financeService->verifyExpense(
+                $id,
+                $request->user(),
+                $request->validated(),
+                $request->ip(),
+                $request->userAgent()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan SPJ berhasil diverifikasi.',
+                'data' => $result
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    // 3. Download LPJ Final (Ultimate Audit Trail)
+    public function downloadFinalAuditReport($id)
+    {
+        try {
+            // Eager load semua relasi untuk "Kertas Kerja" Auditor
+            $travelRequest = TravelRequest::with([
+                'requester.department',
+                'originCity',
+                'destinationCity',
+                'assignees.employee',
+                'approvals.approver',   // Jejak ACC Atasan, Kabid, Kadis
+                'logistics',            // Bukti tiket pesawat/hotel
+                'expenseReport',        // Rincian uang
+                'attachments',          // Nota-nota
+                'auditLogs' => function ($query) {
+                    $query->whereIn('action', ['SUBMIT_SPJ', 'VERIFY_SPJ']);
+                }
+            ])->findOrFail($id);
+
+            if ($travelRequest->status !== 'Selesai') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'LPJ Final belum bisa dicetak karena proses belum berstatus Selesai.'
+                ], 403);
+            }
+
+            $advancePayment = $travelRequest->advance_payment ?? 0;
+            $realExpense = $travelRequest->expenseReport->total_expense ?? 0;
+            $balance = $advancePayment - $realExpense;
+
+            // PERBAIKAN: Ubah 'pdf.template' ke 'pdf.lpj_final' dan ubah key 'data' menjadi 'travelRequest'
+            $pdf = Pdf::loadView('pdf.lpj_final', [
+                'travelRequest'  => $travelRequest, 
+                'advancePayment' => $advancePayment, 
+                'realExpense'    => $realExpense, 
+                'balance'        => $balance
+            ]);
+            
+            $pdf->setPaper('A4', 'portrait');
+
+            $sppd = $travelRequest->sppd_number ?? $travelRequest->id;
+            $fileName = 'LPJ_FINAL_' . str_replace('/', '_', $sppd) . '.pdf';
+
+            // Aku ganti ke stream() agar kamu bisa lihat preview-nya di Bruno tanpa harus buka folder download PC-mu
+            return $pdf->stream($fileName);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mencetak dokumen: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}
