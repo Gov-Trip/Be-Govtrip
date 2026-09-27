@@ -8,6 +8,9 @@ use App\Services\FinanceService;
 use App\Models\TravelRequest;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\User;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use Exception;
 
 class FinanceController extends Controller
@@ -66,6 +69,12 @@ class FinanceController extends Controller
                 $request->ip(),
                 $request->userAgent()
             );
+
+            $result->requester->notify(new SystemNotification(
+                "SPPD dan Dana Siap!", 
+                "Dana Advance telah disetujui. Dokumen SPPD siap diunduh.", 
+                "success"
+            ));
 
             return response()->json([
                 'success' => true,

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\TravelRequestController;
 use App\Http\Controllers\Api\ApprovalController;
 use App\Http\Controllers\Api\TravelLogisticsController;
 use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\NotificationController;
 
 // Super Admin Routes
 use App\Http\Controllers\Api\Admin\DepartmentController;
@@ -20,6 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
     // --- MODUL KARYAWAN (PEMOHON) ---
     Route::prefix('travel-requests')->middleware('auth:sanctum')->group(function () {
         Route::get('/', [TravelRequestController::class, 'index']);      // List Riwayat Saya
@@ -32,7 +35,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // MODUL APPROVAL (Atasan, Kabid, Kadis)
     Route::prefix('approvals')->middleware('dept:PROGRAM')->group(function () {
         Route::get('/', [ApprovalController::class, 'index']);      // List Card
+        Route::get('/dashboard', [ApprovalController::class, 'dashboard']); // Dashboard Ringkas`
         Route::get('/{id}', [ApprovalController::class, 'show']);   // Detail Drawer
+        Route::get('/history', [ApprovalController::class, 'history']); // List Riwayat Saya (Atasan)
         Route::post('/{id}', [ApprovalController::class, 'approve']); // Action Setuju/Tolak (yang sudah jalan)
     });
 

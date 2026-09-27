@@ -7,6 +7,8 @@ use App\Http\Requests\StoreTravelRequest;
 use App\Services\TravelRequestService;
 use App\Models\TravelRequest;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Notifications\SystemNotification;
 use Exception;
 
 class TravelRequestController extends Controller
@@ -48,6 +50,18 @@ class TravelRequestController extends Controller
                 $request->userAgent()
             );
 
+            $atasan = User::where('department_id', $request->user()->department_id)
+                          ->where('role', 'ATASAN') 
+                          ->first();
+                          
+            if ($atasan) {
+                $atasan->notify(new SystemNotification(
+                    "Pengajuan baru dari {$request->user()->name}",
+                    "Tujuan: " . $travelRequest->destinationCity->city_name,
+                    "warning"
+                ));
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Draft pengajuan perjalanan dinas berhasil dibuat.',
@@ -74,35 +88,42 @@ class TravelRequestController extends Controller
         }
     }
 
-    // // 3. Tombol "Kirim" -> Ubah status jadi Menunggu Approval Atasan
-    // public function submitRequest(Request $request, $id)
-    // {
-    //     try {
-    //         $travelRequest = TravelRequest::findOrFail($id);
+public function submitReport(Request $request, $id)
+    {
+        try {
+            // Asumsi kamu melempar form request LPJ ke TravelService
+            $result = $this->travelService->submitExpenseReport(
+                $id,
+                $request->user(),
+                $request->all(), // atau $request->validated() jika pakai FormRequest
+                $request->ip(),
+                $request->userAgent()
+            );
+            // Sesuai mockup Finance: "4 laporan menunggu verifikasi"
+            $timFinance = User::whereHas('department', function($q) {
+                $q->where('code', 'FINANCE');
+            })->get();
 
-    //         // Policy: Pastikan data ini milik karyawan yang sedang login
-    //         $this->authorize('view', $travelRequest);
+            \Illuminate\Support\Facades\Notification::send($timFinance, new SystemNotification(
+                "LPJ Baru Masuk",
+                "{$request->user()->name} telah mengunggah LPJ untuk SPPD {$result->sppd_number}.",
+                "info"
+            ));
+            // ----------------------------------------
 
-    //         $result = $this->travelService->submitToAtasan(
-    //             $id,
-    //             $request->user(),
-    //             $request->ip(),
-    //             $request->userAgent()
-    //         );
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan Pertanggungjawaban (LPJ) berhasil dikirim.',
+                'data'    => $result
+            ]);
 
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Pengajuan berhasil dikirim ke Atasan.',
-    //             'data' => $result
-    //         ]);
-
-    //     } catch (Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => $e->getMessage()
-    //         ], 400);
-    //     }
-    // }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
 
     // 4. Lihat detail 1 pengajuan beserta relasinya
     public function show(Request $request, $id)
@@ -115,7 +136,10 @@ class TravelRequestController extends Controller
             'destinationCity',
             'approvals.approver', // Karyawan bisa lihat catatan atasan (kalau ditolak/revisi)
             'logistics',          // Karyawan bisa lihat kode booking tiket & hotel kalau sudah di-ACC
-            // 'expenseReport'       // Karyawan bisa lihat rincian sisa/kurang uang setelah Finance proses
+            'expenseReport',       // Karyawan bisa lihat rincian sisa/kurang uang setelah Finance proses
+            'auditLogs' => function ($query) {
+                $query->orderBy('created_at', 'asc');
+            }
         ])
             ->where('requester_employee_id', $userId) // SECURITY: Cegah Karyawan intip ID pengajuan orang lain
             ->findOrFail($id);

@@ -7,6 +7,9 @@ use App\Http\Requests\StoreLogisticsRequest;
 use App\Services\TravelLogisticsService;
 use App\Models\TravelRequest;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use Exception;
 
 class TravelLogisticsController extends Controller
@@ -58,6 +61,16 @@ class TravelLogisticsController extends Controller
                 $request->ip(),
                 $request->userAgent()
             );
+
+            $timFinance = User::whereHas('department', function($q) {
+                $q->where('code', 'FINANCE');
+            })->get();
+
+            Notification::send($timFinance, new SystemNotification(
+                "Laporan Menunggu Verifikasi (Uang Muka)",
+                "SPPD untuk {$result->requester->name} siap diproses keuangannya.",
+                "warning"
+            ));
 
             return response()->json([
                 'success' => true, 
