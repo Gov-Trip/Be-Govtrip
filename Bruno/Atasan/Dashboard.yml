@@ -1,0 +1,18 @@
+info:
+  name: Dashboard
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: http://localhost:8000/api/approvals/dashboard
+  auth:
+    type: bearer
+    token: 8|SVjqZNzFZZre5JkskNySWotJ2h7tn9U7wTf3lyUEe20bb109
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

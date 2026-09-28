@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApprovalDecisionRequest;
 use App\Models\TravelRequest;
-use App\Services\ApprovalService;
-use Illuminate\Http\Request;
+use App\Models\Employee;
 use App\Models\User;
+use App\Services\ApprovalService;
 use App\Notifications\SystemNotification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
+use Exception;
 
 class ApprovalController extends Controller
 {
@@ -56,11 +58,20 @@ class ApprovalController extends Controller
 
     public function dashboard(Request $request)
     {
-        $user = $request->user();
-        $departmentId = $user->department_id;
+        // PERBAIKAN: Cari data employee dari user yang login
+        $employee = Employee::where('user_id', $request->user()->id)->first();
+
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pegawai tidak ditemukan.'
+            ], 404);
+        }
+
+        $departmentId = $employee->department_id;
 
         // Bantuan query dasar: Cari semua pengajuan dari departemen Atasan ini
-        $baseQuery = TravelRequest::whereHas('requester', function($q) use ($departmentId) {
+        $baseQuery = TravelRequest::whereHas('requester', function ($q) use ($departmentId) {
             $q->where('department_id', $departmentId);
         });
 
@@ -82,9 +93,9 @@ class ApprovalController extends Controller
             ->count();
 
         $sedangDinasCount = (clone $baseQuery)
-            ->where('status', 'Selesai') // SPPD sudah terbit dan jadwalnya hari ini
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->where('status', 'Selesai')
+            ->whereDate('start_date', '<=', now()) // <-- GANTI DI SINI
+            ->whereDate('end_date', '>=', now())   // <-- GANTI DI SINI
             ->count();
 
         // 2. Ambil List "Pengajuan menunggu" (Tampilkan 5 teratas)
@@ -99,8 +110,8 @@ class ApprovalController extends Controller
         $perjalananTimList = (clone $baseQuery)
             ->with(['requester', 'destinationCity'])
             ->where('status', 'Selesai')
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->whereDate('start_date', '<=', now()) // <-- GANTI DI SINI
+            ->whereDate('end_date', '>=', now())   // <-- GANTI DI SINI
             ->latest()
             ->take(5)
             ->get();
@@ -134,23 +145,34 @@ class ApprovalController extends Controller
             );
 
             if ($travelRequest->status === 'Disetujui') {
-                // 1. Notif ke Karyawan
-                $travelRequest->requester->notify(new SystemNotification(
-                    "Pengajuan ke {$travelRequest->destinationCity->city_name} disetujui Atasan",
-                    "Diteruskan ke Admin Travel untuk pembelian tiket.",
-                    "success"
-                ));
+                // PERBAIKAN 1: Notif ke Karyawan (Cari User-nya dari tabel requester/employee)
+                if ($travelRequest->requester && $travelRequest->requester->user_id) {
+                    $requesterUser = User::find($travelRequest->requester->user_id);
+                    if ($requesterUser) {
+                        $requesterUser->notify(new SystemNotification(
+                            "Pengajuan ke {$travelRequest->destinationCity->city_name} disetujui Atasan",
+                            "Diteruskan ke Admin Travel untuk pembelian tiket.",
+                            "success"
+                        ));
+                    }
+                }
 
-                // 2. Notif ke Group Admin Travel
-                $adminTravelUsers = User::whereHas('department', function ($q) {
+                // PERBAIKAN 2: Notif ke Group Admin Travel (Cari via tabel Employee dulu)
+                $adminTravelEmployees = Employee::whereHas('department', function ($q) {
                     $q->where('code', 'ADMIN_TRAVEL');
                 })->get();
 
-                Notification::send($adminTravelUsers, new SystemNotification(
-                    "Pengajuan Tiket Baru",
-                    "Segera proses tiket untuk {$travelRequest->requester->name}.",
-                    "info"
-                ));
+                // Ambil ID User dari data pegawai Admin Travel
+                $adminUserIds = $adminTravelEmployees->pluck('user_id')->filter();
+                $adminTravelUsers = User::whereIn('id', $adminUserIds)->get();
+
+                if ($adminTravelUsers->isNotEmpty()) {
+                    Notification::send($adminTravelUsers, new SystemNotification(
+                        "Pengajuan Tiket Baru",
+                        "Segera proses tiket untuk {$travelRequest->requester->name}.",
+                        "info"
+                    ));
+                }
             }
 
             return response()->json([
@@ -159,27 +181,37 @@ class ApprovalController extends Controller
                 'data' => $travelRequest
             ], 200);
 
-        } catch (\Exception $e) {
-            // Menangkap Exception dari Service (seperti "Akses ditolak. Hanya Atasan Langsung...")
+        } catch (Exception $e) {
+            // Menangkap Exception dari Service
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
-            ], 400); // <-- Ubah jadi 400 (Bad Request), jangan biarkan jadi 500 atau 403
+            ], 400);
         }
     }
 
     public function history(Request $request)
-{
-    // Ambil pengajuan yang departemennya sama dengan Atasan, 
-    // TAPI statusnya SUDAH BUKAN 'Menunggu Persetujuan Atasan'
-    $history = TravelRequest::with(['requester'])
-        ->whereHas('requester', function($q) use ($request) {
-            $q->where('department_id', $request->user()->department_id);
-        })
-        ->where('status', '!=', 'Menunggu Persetujuan Atasan')
-        ->latest()
-        ->paginate(10);
+    {
+        // PERBAIKAN: Cari data employee dari user yang login
+        $employee = Employee::where('user_id', $request->user()->id)->first();
 
-    return response()->json(['success' => true, 'data' => $history]);
-}
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pegawai tidak ditemukan.'
+            ], 404);
+        }
+
+        // Ambil pengajuan yang departemennya sama dengan Atasan, 
+        // TAPI statusnya SUDAH BUKAN 'Menunggu Persetujuan Atasan'
+        $history = TravelRequest::with(['requester'])
+            ->whereHas('requester', function ($q) use ($employee) {
+                $q->where('department_id', $employee->department_id);
+            })
+            ->where('status', '!=', 'Menunggu Persetujuan Atasan')
+            ->latest()
+            ->paginate(10);
+
+        return response()->json(['success' => true, 'data' => $history]);
+    }
 }

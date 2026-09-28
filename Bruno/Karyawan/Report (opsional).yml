@@ -1,0 +1,30 @@
+info:
+  name: Report (opsional)
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://localhost:8000/api/travel-requests/01a0ea00-31a4-7118-8b1c-eb667d52c010/report
+  headers:
+    - name: Accept
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "total_advance": 5000000,
+        "total_real_expense": 4800000,
+        "balance_amount": 200000,
+        "activity_summary": "Instalasi jaringan dan server di kantor cabang selesai 100% tanpa kendala."
+      }
+  auth:
+    type: bearer
+    token: 7|DHCpdDTbrCGviJrxXeEMUIdiUOIT834KDKAxKA0Mcf44aa6e
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

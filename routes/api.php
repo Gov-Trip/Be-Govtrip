@@ -26,11 +26,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- MODUL KARYAWAN (PEMOHON) ---
     Route::prefix('travel-requests')->middleware('auth:sanctum')->group(function () {
         Route::get('/', [TravelRequestController::class, 'index']);      // List Riwayat Saya
+        Route::get('/dashboard', [TravelRequestController::class, 'dashboard']); // Dashboard Ringkas
         Route::get('/{id}', [TravelRequestController::class, 'show']);   // Detail / Tracking
         Route::post('/', [TravelRequestController::class, 'store']);     // Buat Pengajuan Baru
 
         // Karyawan lapor pulang (yang sudah kita bahas sebelumnya)
-        // Route::post('/{id}/report', [TravelRequestController::class, 'submitReport']);
+        Route::post('/{id}/report', [TravelRequestController::class, 'submitReport']);
     });
     // MODUL APPROVAL (Atasan, Kabid, Kadis)
     Route::prefix('approvals')->middleware('dept:PROGRAM')->group(function () {
@@ -38,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [ApprovalController::class, 'dashboard']); // Dashboard Ringkas`
         Route::get('/{id}', [ApprovalController::class, 'show']);   // Detail Drawer
         Route::get('/history', [ApprovalController::class, 'history']); // List Riwayat Saya (Atasan)
-        Route::post('/{id}', [ApprovalController::class, 'approve']); // Action Setuju/Tolak (yang sudah jalan)
+        Route::post('/{id}', [ApprovalController::class, 'decide']); // Action Setuju/Tolak (yang sudah jalan)
     });
 
     // --- MODUL ADMIN TRAVEL ---

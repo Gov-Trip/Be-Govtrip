@@ -8,7 +8,7 @@ http:
   url: http://localhost:8000/api/finance/verifications
   auth:
     type: bearer
-    token: 4|3AHE9cwlFngyUs3RwTsXKmrCc4T71GHXKOZ5hRFzd47cae03
+    token: 10|dAQtG4ZFzZqvgNU4UmyuabcuEMl0AHHtTQoNdRw7f8cf3faf
 
 settings:
   encodeUrl: true

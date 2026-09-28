@@ -6,11 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLogisticsRequest;
 use App\Services\TravelLogisticsService;
 use App\Models\TravelRequest;
-use Illuminate\Http\Request;
+use App\Models\Employee;
 use App\Models\User;
 use App\Models\AuditLog;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Http\Request;
 use Exception;
 
 class TravelLogisticsController extends Controller
@@ -36,18 +37,18 @@ class TravelLogisticsController extends Controller
             'data'    => $queue
         ]);
     }
+
     public function dashboard(Request $request)
     {
         // 1. Hitung Angka Summary (4 Kotak di atas)
         
-        // Total Pegawai Aktif di perusahaan
-        $totalPegawai = User::where('is_active', true) // Asumsi kamu punya field is_active
-                            ->count();
+        // Total Pegawai Aktif (Lebih akurat menghitung dari tabel employees)
+        $totalPegawai = Employee::count();
 
         // Perjalanan Berjalan (Hari Ini)
         $perjalananBerjalanCount = TravelRequest::where('status', 'Selesai')
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('end_date', '>=', now())
             ->count();
 
         // SPPD Terbit (Bulan Ini)
@@ -65,8 +66,8 @@ class TravelLogisticsController extends Controller
         // List Perjalanan Berjalan (Ambil 5 teratas)
         $perjalananBerjalanList = TravelRequest::with(['requester', 'destinationCity'])
             ->where('status', 'Selesai')
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('end_date', '>=', now())
             ->latest()
             ->take(5)
             ->get();
@@ -119,15 +120,22 @@ class TravelLogisticsController extends Controller
                 $request->userAgent()
             );
 
-            $timFinance = User::whereHas('department', function($q) {
+            // PERBAIKAN PENCARIAN NOTIFIKASI FINANCE
+            $financeEmployees = Employee::whereHas('department', function($q) {
                 $q->where('code', 'FINANCE');
             })->get();
 
-            Notification::send($timFinance, new SystemNotification(
-                "Laporan Menunggu Verifikasi (Uang Muka)",
-                "SPPD untuk {$result->requester->name} siap diproses keuangannya.",
-                "warning"
-            ));
+            // Ambil ID User dari pegawai Finance
+            $financeUserIds = $financeEmployees->pluck('user_id')->filter();
+            $timFinance = User::whereIn('id', $financeUserIds)->get();
+
+            if ($timFinance->isNotEmpty()) {
+                Notification::send($timFinance, new SystemNotification(
+                    "Laporan Menunggu Verifikasi (Uang Muka)",
+                    "SPPD untuk {$result->requester->name} siap diproses keuangannya.",
+                    "warning"
+                ));
+            }
 
             return response()->json([
                 'success' => true, 
@@ -164,7 +172,6 @@ class TravelLogisticsController extends Controller
             // $travelRequest->status = 'Menunggu Uang Muka'; // Jika alurnya mengubah status
             $travelRequest->save();
 
-            // Panggilan AuditLog sekarang jauh lebih rapi tanpa backslash
             AuditLog::create([
                 'travel_request_id' => $travelRequest->id,
                 'user_id'           => $request->user()->id,
@@ -180,7 +187,7 @@ class TravelLogisticsController extends Controller
                 ]
             ]);
 
-        } catch (\Exception $e) { // Exception bawaan PHP tetap pakai backslash atau di-import 'use Exception;' di atas
+        } catch (Exception $e) { 
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()

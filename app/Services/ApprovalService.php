@@ -17,22 +17,24 @@ class ApprovalService
         $nextStatus = '';
 
         // 1. Validasi Status Pengajuan
-        // Mengakomodasi "Menunggu Atasan" (dari input Bruno) atau "Menunggu Persetujuan" (dari default DB)
-        if (!in_array($currentStatus, ['Menunggu Atasan', 'Menunggu Persetujuan', 'draft', 'Draft'])) {
+        // Ditambahkan 'Menunggu Persetujuan Atasan' agar selaras dengan ApprovalController
+        if (!in_array($currentStatus, ['Menunggu Atasan', 'Menunggu Persetujuan Atasan', 'Menunggu Persetujuan', 'draft', 'Draft'])) {
             throw new Exception("Pengajuan ini tidak sedang dalam antrean persetujuan.");
         }
+
         // 2. Validasi Hak Akses (Hanya Atasan Langsung)
         if ($travelRequest->requester->direct_supervisor_id !== $approver->id) {
             throw new Exception("Akses ditolak. Hanya Atasan Langsung yang dapat memproses tahap ini.");
         }
 
-        // 3. Tentukan Keputusan (Sesuaikan dengan Form Request)
-        if ($data['decision'] === 'Disetujui') {
+        // 3. Tentukan Keputusan
+        // Mendukung input 'Disetujui' atau 'approved' dari sisi FE
+        if ($data['decision'] === 'Disetujui' || $data['decision'] === 'approved') {
             $nextStatus = 'Disetujui';
-        } elseif ($data['decision'] === 'Ditolak') {
+        } elseif ($data['decision'] === 'Ditolak' || $data['decision'] === 'rejected') {
             $nextStatus = 'Ditolak';
         } else {
-            $nextStatus = 'Perlu Revisi'; // <-- Sesuaikan dengan 'in:...,Perlu Revisi'
+            $nextStatus = 'Direvisi'; // Diselaraskan dengan Dashboard Atasan
         }
 
         DB::beginTransaction();
@@ -46,20 +48,13 @@ class ApprovalService
                 'action_at' => now(),
             ]);
 
-            // 5. Generate SPPD Digital Otomatis jika Disetujui
-            $sppdNumber = $travelRequest->sppd_number;
-            if ($nextStatus === 'Disetujui' && !$sppdNumber) {
-                // Format SPPD menggunakan 4 karakter pertama UUID agar unik namun rapi
-                $sppdNumber = 'SPPD/' . date('Y/m') . '/' . strtoupper(substr($travelRequest->id, 0, 4));
-            }
-
-            // 6. Update Status Pengajuan
+            // 5. Update Status Pengajuan 
+            // (Logika pembuatan SPPD_NUMBER dihapus sepenuhnya dari sini)
             $travelRequest->update([
-                'status' => $nextStatus,
-                'sppd_number' => $sppdNumber
+                'status' => $nextStatus
             ]);
 
-            // 7. Jejak Audit
+            // 6. Jejak Audit
             AuditLog::create([
                 'user_id' => $approverUser->id,
                 'travel_request_id' => $travelRequest->id,

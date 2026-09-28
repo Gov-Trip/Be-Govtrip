@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8000/api/finance/verifications/01a0bde4-607a-7117-87a3-e1b054385a62
+  url: http://localhost:8000/api/finance/verifications/01a0ea00-31a4-7118-8b1c-eb667d52c010
   body:
     type: json
     data: |-
@@ -16,7 +16,7 @@ http:
       }
   auth:
     type: bearer
-    token: 4|3AHE9cwlFngyUs3RwTsXKmrCc4T71GHXKOZ5hRFzd47cae03
+    token: 10|dAQtG4ZFzZqvgNU4UmyuabcuEMl0AHHtTQoNdRw7f8cf3faf
 
 settings:
   encodeUrl: true

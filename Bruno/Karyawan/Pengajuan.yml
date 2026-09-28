@@ -14,15 +14,15 @@ http:
     data: |-
       {
           "origin_city_id": 1,
-          "destination_city_id": 2,
+          "destination_city_id": 1,
           "start_date": "2026-10-10",
-          "end_date": "2026-10-12",
+          "end_date": "2026-11-12",
           "purpose": "Kunjungan Lapangan serta rapat",
           "status": "Menunggu Atasan"
       }
   auth:
     type: bearer
-    token: 1|Ws1SKIfaiRj1P5Kcodb90rz7zL8kTBtdFu1Wn50u0055c92e
+    token: 7|DHCpdDTbrCGviJrxXeEMUIdiUOIT834KDKAxKA0Mcf44aa6e
 
 settings:
   encodeUrl: true

@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8000/api/Logout
+  url: http://localhost:8000/api/logout
   auth:
     type: bearer
     token: "{{token}}"

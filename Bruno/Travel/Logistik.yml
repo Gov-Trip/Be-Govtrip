@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8000/api/travel-admin/01a0bde4-607a-7117-87a3-e1b054385a62/logistics
+  url: http://localhost:8000/api/logistics/01a0ea00-31a4-7118-8b1c-eb667d52c010
   headers:
     - name: Accept
       value: application/json
@@ -21,7 +21,7 @@ http:
       }
   auth:
     type: bearer
-    token: 3|Q4SUQ2hViEAz1Njz8PAbTdiBk2YLnlRXpiEqmOwxc902376d
+    token: 9|i7Vz3621HyCocEEM4biaj32gNDg3p7K5FlVBSmjS9ac22248
 
 settings:
   encodeUrl: true
