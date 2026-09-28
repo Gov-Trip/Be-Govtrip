@@ -37,6 +37,46 @@ class FinanceController extends Controller
             'data'    => $queue
         ]);
     }
+    public function dashboard(Request $request)
+    {   
+        $perluDiverifikasi = TravelRequest::where('status', 'Menunggu Verifikasi LPJ')->count();
+        
+        $terverifikasiBulanIni = TravelRequest::where('status', 'Selesai')
+            ->whereMonth('updated_at', now()->month)
+            ->whereYear('updated_at', now()->year)
+            ->count();
+
+        $dikembalikan = TravelRequest::where('status', 'Revisi LPJ')
+            ->whereMonth('updated_at', now()->month)
+            ->count();
+
+        // Total Realisasi (Menjumlahkan total_expense dari tabel expense_reports bulan ini)
+        $totalRealisasi = \App\Models\ExpenseReport::whereHas('travelRequest', function($q) {
+                $q->where('status', 'Selesai')
+                  ->whereMonth('updated_at', now()->month)
+                  ->whereYear('updated_at', now()->year);
+            })->sum('total_expense');
+
+        // Antrean Verifikasi (Ambil 5 teratas)
+        $antreanVerifikasi = TravelRequest::with(['requester', 'expenseReport'])
+            ->where('status', 'Menunggu Verifikasi LPJ')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'perlu_diverifikasi' => $perluDiverifikasi,
+                    'terverifikasi_bulan_ini' => $terverifikasiBulanIni,
+                    'dikembalikan' => $dikembalikan,
+                    'total_realisasi' => $totalRealisasi,
+                ],
+                'antrean_verifikasi' => $antreanVerifikasi,
+            ]
+        ]);
+    }
 
     // SHOW: Detail "Stopmap" lengkap sebelum mencairkan dana
     public function show($id)
@@ -46,7 +86,9 @@ class FinanceController extends Controller
             'originCity', 
             'destinationCity',
             'approvals.approver', 
-            'logistics' // Finance WAJIB melihat tiket dan harga hotel sebelum mencairkan uang!
+            'logistics',
+            'expenseReport',
+            'attachments',
         ])->findOrFail($id);
 
         return response()->json([
@@ -141,5 +183,19 @@ class FinanceController extends Controller
                 'message' => 'Gagal mencetak dokumen: ' . $e->getMessage()
             ], 500);
         }
+    }
+    public function history(Request $request)
+    {
+        // Mengambil semua pengajuan yang sudah melewati tahap Bendahara
+        // (Status Selesai atau Revisi LPJ)
+        $history = TravelRequest::with(['requester'])
+            ->whereIn('status', ['Selesai', 'Revisi LPJ']) // Sesuaikan enum statusmu
+            ->latest()
+            ->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $history
+        ]);
     }
 }

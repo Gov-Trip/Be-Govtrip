@@ -43,14 +43,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- MODUL ADMIN TRAVEL ---
     Route::prefix('logistics')->middleware('dept:ADMIN_TRAVEL')->group(function () {
+        Route::get('/dashboard', [TravelLogisticsController::class, 'dashboard']); // Dashboard Ringkas
         Route::get('/', [TravelLogisticsController::class, 'index']);      // List Card
         Route::get('/{id}', [TravelLogisticsController::class, 'show']);   // Detail
         Route::post('/{id}', [TravelLogisticsController::class, 'store']); // Aksi Input Tiket
+        Route::post('/{id}/generate-sppd', [TravelLogisticsController::class, 'generateSppd']);
     });
 
     // --- MODUL FINANCE ---
     Route::prefix('finance')->middleware('dept:FINANCE')->group(function () {
         Route::get('/verifications', [FinanceController::class, 'index']);      // List Card
+        Route::get('/verifications/dashboard', [FinanceController::class, 'dashboard']); // Dashboard Ringkas
+        Route::get('/verifications/history', [FinanceController::class, 'history']); //
         Route::get('/verifications/{id}', [FinanceController::class, 'show']);  // Detail
         Route::post('/verifications/{id}', [FinanceController::class, 'verify']); // Aksi ACC Dana
 
