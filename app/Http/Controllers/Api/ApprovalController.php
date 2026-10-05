@@ -7,6 +7,7 @@ use App\Http\Requests\ApprovalDecisionRequest;
 use App\Models\TravelRequest;
 use App\Models\Employee;
 use App\Models\User;
+use App\Models\Approval;
 use App\Services\ApprovalService;
 use App\Notifications\SystemNotification;
 use Illuminate\Http\Request;
@@ -188,6 +189,42 @@ class ApprovalController extends Controller
                 'message' => $e->getMessage()
             ], 400);
         }
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string|min:5'
+        ]);
+
+        $travelRequest = TravelRequest::findOrFail($id);
+        
+        $travelRequest->update([
+            'status' => 'Direvisi',
+            'rejection_reason' => $request->rejection_reason
+        ]);
+
+        Approval::create([
+            'travel_request_id' => $travelRequest->id,
+            'approver_employee_id' => $request->user()->employee->id,
+            'status' => 'Ditolak',
+            'notes' => $request->rejection_reason,
+            'action_at' => now(),
+        ]);
+
+        $requesterUser = User::find($travelRequest->requester->user_id);
+        if ($requesterUser) {
+            $requesterUser->notify(new SystemNotification(
+                "Pengajuan Dikembalikan", 
+                "Atasan meminta revisi: " . $request->rejection_reason, 
+                "error"
+            ));
+        }
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Pengajuan dikembalikan ke karyawan untuk direvisi.'
+        ]);
     }
 
     public function history(Request $request)

@@ -191,7 +191,8 @@ class TravelRequestController extends Controller
 
         // 3. Validasi status: Hanya bisa submit LPJ jika statusnya sesuai
         // (Sesuaikan array status ini dengan alur bisnismu, misal 'Selesai' atau 'Siap Berangkat' atau 'Revisi LPJ')
-        $allowedStatuses = ['Selesai', 'Revisi LPJ', 'Siap Berangkat'];
+        $allowedStatuses = ['Siap Berangkat', 'Revisi LPJ'];
+
         if (!in_array($travelRequest->status, $allowedStatuses)) {
             throw new Exception('LPJ tidak dapat dikirim pada status saat ini: ' . $travelRequest->status);
         }
@@ -245,6 +246,34 @@ class TravelRequestController extends Controller
         return response()->json([
             'success' => true,
             'data' => $travelRequest
+        ]);
+    }
+    public function resubmit(Request $request, $id)
+    {
+        $employee = Employee::where('user_id', $request->user()->id)->first();
+        
+        $travelRequest = TravelRequest::where('id', $id)
+            ->where('requester_employee_id', $employee->id)
+            ->firstOrFail();
+
+        // Kosongkan alasan penolakan dan kembalikan statusnya
+        $travelRequest->update([
+            'status' => 'Menunggu Persetujuan Atasan',
+            'rejection_reason' => null
+        ]);
+
+        AuditLog::create([
+            'travel_request_id' => $travelRequest->id,
+            'user_id' => $request->user()->id,
+            'action' => 'RESUBMITTED',
+            'description' => "Karyawan telah melakukan revisi dan mengajukan ulang.",
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Revisi berhasil diajukan ulang ke Atasan.'
         ]);
     }
 }

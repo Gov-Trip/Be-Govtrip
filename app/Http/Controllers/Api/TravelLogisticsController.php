@@ -149,6 +149,33 @@ class TravelLogisticsController extends Controller
             ], 400);
         }
     }
+    public function reject(Request $request, $id)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string|min:5'
+        ]);
+
+        $travelRequest = TravelRequest::findOrFail($id);
+
+        $travelRequest->update([
+            'status' => 'Dibatalkan', 
+            'rejection_reason' => $request->rejection_reason
+        ]);
+
+        AuditLog::create([
+            'travel_request_id' => $travelRequest->id,
+            'user_id' => $request->user()->id,
+            'action' => 'LOGISTICS_REJECTED',
+            'description' => "Admin Travel membatalkan tiket. Alasan: " . $request->rejection_reason,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Pengajuan dibatalkan beserta alasannya.'
+        ]);
+    }
     public function generateSppd(Request $request, $id)
     {
         try {

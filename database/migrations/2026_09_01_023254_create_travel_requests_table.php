@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->decimal('estimated_total_cost', 12, 2)->default(0);
             $table->decimal('advance_payment', 12, 2)->default(0);
             $table->string('status', 50)->default('Menunggu Persetujuan');
+            $table->text('rejection_reason')->nullable(); // Alasan Atasan/Finance menolak pengajuan   
             $table->string('cancel_reason_type', 100)->nullable(); // Anggaran dibatalkan, Agenda dibatalkan, Force Majeure
             $table->text('cancel_notes')->nullable();
             $table->timestamps();

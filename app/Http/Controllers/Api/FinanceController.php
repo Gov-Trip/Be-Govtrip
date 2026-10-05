@@ -134,6 +134,41 @@ class FinanceController extends Controller
         }
     }
 
+    public function rejectLpj(Request $request, $id)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string|min:5'
+        ]);
+
+        $travelRequest = TravelRequest::with('expenseReport')->findOrFail($id);
+
+        $travelRequest->update([
+            'status' => 'Revisi LPJ',
+            'rejection_reason' => $request->rejection_reason
+        ]);
+
+        if ($travelRequest->expenseReport) {
+            $travelRequest->expenseReport->update([
+                'status' => 'REJECTED',
+                'finance_notes' => $request->rejection_reason
+            ]);
+        }
+
+        $requesterUser = User::find($travelRequest->requester->user_id);
+        if ($requesterUser) {
+            $requesterUser->notify(new SystemNotification(
+                "LPJ Ditolak Bendahara", 
+                "Alasan: " . $request->rejection_reason, 
+                "error"
+            ));
+        }
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'LPJ dikembalikan untuk direvisi.'
+        ]);
+    }
+
     public function downloadFinalAuditReport($id)
     {
         try {
