@@ -30,7 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [TravelRequestController::class, 'store']);     // Buat Pengajuan Baru
 
         // Karyawan lapor pulang (yang sudah kita bahas sebelumnya)
-        // Route::post('/{id}/report', [TravelRequestController::class, 'submitReport']);
+        Route::get('/{id}/download-sppd', [TravelRequestController::class, 'downloadSppd']);
+        Route::get('/{id}/download-lpj', [TravelRequestController::class, 'downloadLpjFinal']);
     });
     // MODUL APPROVAL (Atasan, Kabid, Kadis)
     Route::prefix('approvals')->middleware('dept:PROGRAM')->group(function () {

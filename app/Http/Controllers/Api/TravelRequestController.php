@@ -9,6 +9,7 @@ use App\Models\TravelRequest;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 
 class TravelRequestController extends Controller
@@ -88,43 +89,6 @@ class TravelRequestController extends Controller
         }
     }
 
-public function submitReport(Request $request, $id)
-    {
-        try {
-            // Asumsi kamu melempar form request LPJ ke TravelService
-            $result = $this->travelService->submitExpenseReport(
-                $id,
-                $request->user(),
-                $request->all(), // atau $request->validated() jika pakai FormRequest
-                $request->ip(),
-                $request->userAgent()
-            );
-            // Sesuai mockup Finance: "4 laporan menunggu verifikasi"
-            $timFinance = User::whereHas('department', function($q) {
-                $q->where('code', 'FINANCE');
-            })->get();
-
-            \Illuminate\Support\Facades\Notification::send($timFinance, new SystemNotification(
-                "LPJ Baru Masuk",
-                "{$request->user()->name} telah mengunggah LPJ untuk SPPD {$result->sppd_number}.",
-                "info"
-            ));
-            // ----------------------------------------
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Laporan Pertanggungjawaban (LPJ) berhasil dikirim.',
-                'data'    => $result
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
-    }
-
     // 4. Lihat detail 1 pengajuan beserta relasinya
     public function show(Request $request, $id)
     {
@@ -148,5 +112,97 @@ public function submitReport(Request $request, $id)
             'success' => true,
             'data' => $travelRequest
         ]);
+    }
+
+    // 5. Download / Preview Dokumen SPPD (Dibuat oleh Admin Travel)
+    public function downloadSppd(Request $request, $id)
+    {
+        try {
+            $userId = $request->user()->id;
+
+            $travelRequest = TravelRequest::with([
+                'requester.department', 
+                'originCity', 
+                'destinationCity', 
+                'assignees.employee'
+            ])
+            ->where('requester_employee_id', $userId)
+            ->findOrFail($id);
+
+            if (!$travelRequest->sppd_number) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dokumen SPPD belum diterbitkan oleh Admin Travel.'
+                ], 403);
+            }
+
+            // Menggunakan Facade Pdf yang sudah di-import di atas
+            $pdf = Pdf::loadView('pdf.sppd', [
+                'travelRequest' => $travelRequest
+            ]);
+            
+            $pdf->setPaper('A4', 'portrait');
+            $fileName = 'SPPD_' . str_replace('/', '_', $travelRequest->sppd_number) . '.pdf';
+
+            return $pdf->stream($fileName);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengunduh SPPD: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // 6. Download / Preview Dokumen LPJ Final (Diverifikasi oleh Finance)
+    public function downloadLpjFinal(Request $request, $id)
+    {
+        try {
+            $userId = $request->user()->id;
+
+            $travelRequest = TravelRequest::with([
+                'requester.department',
+                'originCity',
+                'destinationCity',
+                'assignees.employee',
+                'approvals.approver',
+                'logistics',
+                'expenseReport',
+                'attachments',
+            ])
+            ->where('requester_employee_id', $userId)
+            ->findOrFail($id);
+
+            if ($travelRequest->status !== 'Selesai') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'LPJ Final belum dapat diunduh karena proses verifikasi Finance belum berstatus Selesai.'
+                ], 403);
+            }
+
+            $advancePayment = $travelRequest->advance_payment ?? 0;
+            $realExpense = $travelRequest->expenseReport->total_expense ?? 0;
+            $balance = $advancePayment - $realExpense;
+
+            // Menggunakan Facade Pdf yang sudah di-import di atas
+            $pdf = Pdf::loadView('pdf.lpj_final', [
+                'travelRequest'  => $travelRequest, 
+                'advancePayment' => $advancePayment, 
+                'realExpense'    => $realExpense, 
+                'balance'        => $balance
+            ]);
+            
+            $pdf->setPaper('A4', 'portrait');
+            $sppdNumber = $travelRequest->sppd_number ?? $travelRequest->id;
+            $fileName = 'LPJ_FINAL_' . str_replace('/', '_', $sppdNumber) . '.pdf';
+
+            return $pdf->stream($fileName);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengunduh LPJ Final: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -1,0 +1,21 @@
+info:
+  name: Get by id
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: http://localhost:8000/api/travel-requests/{{id}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: id
+      value: 01a132dc-aa36-7265-be2e-0c1cb625a0d8
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
