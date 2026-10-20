@@ -8,7 +8,7 @@ http:
   url: http://localhost:8000/api/approvals/dashboard
   auth:
     type: bearer
-    token: 8|SVjqZNzFZZre5JkskNySWotJ2h7tn9U7wTf3lyUEe20bb109
+    token: 2|Gfm63kRMfWP6ybEmBA2bp1G6mGv4JWbhptgtfdM0dd2fca56
 
 settings:
   encodeUrl: true

@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8000/api/approvals/01a0ea00-31a4-7118-8b1c-eb667d52c010
+  url: http://localhost:8000/api/approvals/01a156f5-6873-7244-baca-5b2682f26d65
   body:
     type: json
     data: |-
@@ -15,7 +15,7 @@ http:
       }
   auth:
     type: bearer
-    token: 8|SVjqZNzFZZre5JkskNySWotJ2h7tn9U7wTf3lyUEe20bb109
+    token: 2|Gfm63kRMfWP6ybEmBA2bp1G6mGv4JWbhptgtfdM0dd2fca56
 
 settings:
   encodeUrl: true
