@@ -4,20 +4,20 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLogisticsRequest;
-use App\Services\TravelLogisticsService;
-use App\Models\TravelRequest;
-use Illuminate\Http\Request;
-use App\Models\User;
 use App\Models\AuditLog;
+use App\Models\TravelRequest;
+use App\Models\User;
 use App\Notifications\SystemNotification;
-use Illuminate\Support\Facades\Notification;
+use App\Services\TravelLogisticsService;
 use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class TravelLogisticsController extends Controller
 {
     protected TravelLogisticsService $logisticsService;
 
-    public function __construct(TravelLogisticsService $logisticsService) 
+    public function __construct(TravelLogisticsService $logisticsService)
     {
         $this->logisticsService = $logisticsService;
     }
@@ -33,16 +33,17 @@ class TravelLogisticsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $queue
+            'data' => $queue,
         ]);
     }
+
     public function dashboard(Request $request)
     {
         // 1. Hitung Angka Summary (4 Kotak di atas)
-        
+
         // Total Pegawai Aktif di perusahaan
         $totalPegawai = User::where('is_active', true) // Asumsi kamu punya field is_active
-                            ->count();
+            ->count();
 
         // Perjalanan Berjalan (Hari Ini)
         $perjalananBerjalanCount = TravelRequest::where('status', 'Selesai')
@@ -59,9 +60,8 @@ class TravelLogisticsController extends Controller
         // Dokumen Belum Lengkap (Misal: Status masih di 'Disetujui' dan butuh input tiket)
         $dokumenBelumLengkapCount = TravelRequest::where('status', 'Disetujui')->count();
 
-
         // 2. Ambil List Data
-        
+
         // List Perjalanan Berjalan (Ambil 5 teratas)
         $perjalananBerjalanList = TravelRequest::with(['requester', 'destinationCity'])
             ->where('status', 'Selesai')
@@ -88,23 +88,23 @@ class TravelLogisticsController extends Controller
                     'dokumen_belum_lengkap' => $dokumenBelumLengkapCount,
                 ],
                 'perjalanan_berjalan_list' => $perjalananBerjalanList,
-                'tindak_lanjut_list' => $tindakLanjutList
-            ]
+                'tindak_lanjut_list' => $tindakLanjutList,
+            ],
         ]);
     }
 
     public function show($id)
     {
         $travelRequest = TravelRequest::with([
-            'requester.department', 
-            'originCity', 
+            'requester.department',
+            'originCity',
             'destinationCity',
-            'approvals.approver' 
+            'approvals.approver',
         ])->findOrFail($id);
 
         return response()->json([
             'success' => true,
-            'data'    => $travelRequest
+            'data' => $travelRequest,
         ]);
     }
 
@@ -112,35 +112,36 @@ class TravelLogisticsController extends Controller
     {
         try {
             $result = $this->logisticsService->inputLogistics(
-                $id, 
+                $id,
                 $request->user(),
                 $request->validated(),
                 $request->ip(),
                 $request->userAgent()
             );
 
-            $timFinance = User::whereHas('department', function($q) {
+            $timFinance = User::whereHas('department', function ($q) {
                 $q->where('code', 'FINANCE');
             })->get();
 
             Notification::send($timFinance, new SystemNotification(
-                "Laporan Menunggu Verifikasi (Uang Muka)",
+                'Laporan Menunggu Verifikasi (Uang Muka)',
                 "SPPD untuk {$result->requester->name} siap diproses keuangannya.",
-                "warning"
+                'warning'
             ));
 
             return response()->json([
-                'success' => true, 
-                'message' => 'Data logistik dan tiket berhasil disimpan. Status berubah menjadi Siap Berangkat.', 
-                'data'    => $result
+                'success' => true,
+                'message' => 'Data logistik dan tiket berhasil disimpan. Status berubah menjadi Siap Berangkat.',
+                'data' => $result,
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'success' => false, 
-                'message' => $e->getMessage()
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 400);
         }
     }
+
     public function generateSppd(Request $request, $id)
     {
         try {
@@ -149,15 +150,15 @@ class TravelLogisticsController extends Controller
             if ($travelRequest->sppd_number) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'SPPD sudah diterbitkan: ' . $travelRequest->sppd_number
+                    'message' => 'SPPD sudah diterbitkan: '.$travelRequest->sppd_number,
                 ], 400);
             }
 
             // Gunakan format angka standar (Misal: 090/087/SPPD/09/2026)
-            $bulan = now()->format('m'); 
-            $tahun = now()->year;        
-            
-            $nomorUrut = str_pad($travelRequest->id, 3, '0', STR_PAD_LEFT); 
+            $bulan = now()->format('m');
+            $tahun = now()->year;
+
+            $nomorUrut = str_pad($travelRequest->id, 3, '0', STR_PAD_LEFT);
             $sppdNumber = "090/{$nomorUrut}/SPPD/{$bulan}/{$tahun}";
 
             $travelRequest->sppd_number = $sppdNumber;
@@ -167,23 +168,23 @@ class TravelLogisticsController extends Controller
             // Panggilan AuditLog sekarang jauh lebih rapi tanpa backslash
             AuditLog::create([
                 'travel_request_id' => $travelRequest->id,
-                'user_id'           => $request->user()->id,
-                'action'            => 'GENERATE_SPPD',
-                'description'       => "SPPD diterbitkan dengan nomor {$sppdNumber}"
+                'user_id' => $request->user()->id,
+                'action' => 'GENERATE_SPPD',
+                'description' => "SPPD diterbitkan dengan nomor {$sppdNumber}",
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Nomor SPPD berhasil diterbitkan.',
                 'data' => [
-                    'sppd_number' => $sppdNumber
-                ]
+                    'sppd_number' => $sppdNumber,
+                ],
             ]);
 
-        } catch (\Exception $e) { // Exception bawaan PHP tetap pakai backslash atau di-import 'use Exception;' di atas
+        } catch (Exception $e) { // Exception bawaan PHP tetap pakai backslash atau di-import 'use Exception;' di atas
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

@@ -16,14 +16,14 @@ class FinanceVerifyRequest extends FormRequest
         return [
             'is_valid' => 'required|boolean', // Wajib boolean (true/false)
             'advance_payment' => 'required|numeric|min:0',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'finance_notes.required_if' => 'Catatan revisi wajib diisi jika laporan SPJ tidak valid atau perlu diperbaiki.'
+            'finance_notes.required_if' => 'Catatan revisi wajib diisi jika laporan SPJ tidak valid atau perlu diperbaiki.',
         ];
     }
 }

@@ -17,11 +17,11 @@ class TravelPolicyController extends Controller
     {
         $validated = $request->validate([
             'destination_city_id' => 'required|exists:ref_cities,id',
-            'grade_group'         => 'required|string|max:50',
-            'daily_allowance'     => 'required|numeric|min:0',
-            'max_hotel_rate'      => 'required|numeric|min:0',
-            'max_transport_rate'  => 'required|numeric|min:0',
-            'effective_year'      => 'required|integer|min:2020',
+            'grade_group' => 'required|string|max:50',
+            'daily_allowance' => 'required|numeric|min:0',
+            'max_hotel_rate' => 'required|numeric|min:0',
+            'max_transport_rate' => 'required|numeric|min:0',
+            'effective_year' => 'required|integer|min:2020',
         ]);
 
         $exists = TravelPolicy::where('destination_city_id', $request->destination_city_id)
@@ -33,6 +33,7 @@ class TravelPolicyController extends Controller
         }
 
         $policy = TravelPolicy::create($validated);
+
         return response()->json(['success' => true, 'data' => $policy], 201);
     }
 
@@ -46,20 +47,22 @@ class TravelPolicyController extends Controller
         $policy = TravelPolicy::findOrFail($id);
         $validated = $request->validate([
             'destination_city_id' => 'required|exists:ref_cities,id',
-            'grade_group'         => 'required|string|max:50',
-            'daily_allowance'     => 'required|numeric|min:0',
-            'max_hotel_rate'      => 'required|numeric|min:0',
-            'max_transport_rate'  => 'required|numeric|min:0',
-            'effective_year'      => 'required|integer|min:2020',
+            'grade_group' => 'required|string|max:50',
+            'daily_allowance' => 'required|numeric|min:0',
+            'max_hotel_rate' => 'required|numeric|min:0',
+            'max_transport_rate' => 'required|numeric|min:0',
+            'effective_year' => 'required|integer|min:2020',
         ]);
 
         $policy->update($validated);
+
         return response()->json(['success' => true, 'data' => $policy]);
     }
 
     public function destroy($id)
     {
         TravelPolicy::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'SBM dihapus.']);
     }
 }

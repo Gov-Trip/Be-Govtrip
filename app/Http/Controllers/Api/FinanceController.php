@@ -4,14 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FinanceVerifyRequest;
-use App\Services\FinanceService;
+use App\Models\ExpenseReport;
 use App\Models\TravelRequest;
-use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\User;
 use App\Notifications\SystemNotification;
-use Illuminate\Support\Facades\Notification;
+use App\Services\FinanceService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
+use Illuminate\Http\Request;
 
 class FinanceController extends Controller
 {
@@ -34,13 +33,14 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $queue
+            'data' => $queue,
         ]);
     }
+
     public function dashboard(Request $request)
-    {   
+    {
         $perluDiverifikasi = TravelRequest::where('status', 'Menunggu Verifikasi LPJ')->count();
-        
+
         $terverifikasiBulanIni = TravelRequest::where('status', 'Selesai')
             ->whereMonth('updated_at', now()->month)
             ->whereYear('updated_at', now()->year)
@@ -51,11 +51,11 @@ class FinanceController extends Controller
             ->count();
 
         // Total Realisasi (Menjumlahkan total_expense dari tabel expense_reports bulan ini)
-        $totalRealisasi = \App\Models\ExpenseReport::whereHas('travelRequest', function($q) {
-                $q->where('status', 'Selesai')
-                  ->whereMonth('updated_at', now()->month)
-                  ->whereYear('updated_at', now()->year);
-            })->sum('total_expense');
+        $totalRealisasi = ExpenseReport::whereHas('travelRequest', function ($q) {
+            $q->where('status', 'Selesai')
+                ->whereMonth('updated_at', now()->month)
+                ->whereYear('updated_at', now()->year);
+        })->sum('total_expense');
 
         // Antrean Verifikasi (Ambil 5 teratas)
         $antreanVerifikasi = TravelRequest::with(['requester', 'expenseReport'])
@@ -74,7 +74,7 @@ class FinanceController extends Controller
                     'total_realisasi' => $totalRealisasi,
                 ],
                 'antrean_verifikasi' => $antreanVerifikasi,
-            ]
+            ],
         ]);
     }
 
@@ -82,10 +82,10 @@ class FinanceController extends Controller
     public function show($id)
     {
         $travelRequest = TravelRequest::with([
-            'requester.department', 
-            'originCity', 
+            'requester.department',
+            'originCity',
             'destinationCity',
-            'approvals.approver', 
+            'approvals.approver',
             'logistics',
             'expenseReport',
             'attachments',
@@ -93,7 +93,7 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $travelRequest
+            'data' => $travelRequest,
         ]);
     }
 
@@ -113,20 +113,20 @@ class FinanceController extends Controller
             );
 
             $result->requester->notify(new SystemNotification(
-                "SPPD dan Dana Siap!", 
-                "Dana Advance telah disetujui. Dokumen SPPD siap diunduh.", 
-                "success"
+                'SPPD dan Dana Siap!',
+                'Dana Advance telah disetujui. Dokumen SPPD siap diunduh.',
+                'success'
             ));
 
             return response()->json([
                 'success' => true,
                 'message' => 'Laporan SPJ berhasil diverifikasi.',
-                'data' => $result
+                'data' => $result,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 400);
         }
     }
@@ -147,13 +147,13 @@ class FinanceController extends Controller
                 'attachments',          // Nota-nota
                 'auditLogs' => function ($query) {
                     $query->whereIn('action', ['SUBMIT_SPJ', 'VERIFY_SPJ']);
-                }
+                },
             ])->findOrFail($id);
 
             if ($travelRequest->status !== 'Selesai') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'LPJ Final belum bisa dicetak karena proses belum berstatus Selesai.'
+                    'message' => 'LPJ Final belum bisa dicetak karena proses belum berstatus Selesai.',
                 ], 403);
             }
 
@@ -163,16 +163,16 @@ class FinanceController extends Controller
 
             // PERBAIKAN: Ubah 'pdf.template' ke 'pdf.lpj_final' dan ubah key 'data' menjadi 'travelRequest'
             $pdf = Pdf::loadView('pdf.lpj_final', [
-                'travelRequest'  => $travelRequest, 
-                'advancePayment' => $advancePayment, 
-                'realExpense'    => $realExpense, 
-                'balance'        => $balance
+                'travelRequest' => $travelRequest,
+                'advancePayment' => $advancePayment,
+                'realExpense' => $realExpense,
+                'balance' => $balance,
             ]);
-            
+
             $pdf->setPaper('A4', 'portrait');
 
             $sppd = $travelRequest->sppd_number ?? $travelRequest->id;
-            $fileName = 'LPJ_FINAL_' . str_replace('/', '_', $sppd) . '.pdf';
+            $fileName = 'LPJ_FINAL_'.str_replace('/', '_', $sppd).'.pdf';
 
             // Aku ganti ke stream() agar kamu bisa lihat preview-nya di Bruno tanpa harus buka folder download PC-mu
             return $pdf->stream($fileName);
@@ -180,10 +180,11 @@ class FinanceController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mencetak dokumen: ' . $e->getMessage()
+                'message' => 'Gagal mencetak dokumen: '.$e->getMessage(),
             ], 500);
         }
     }
+
     public function history(Request $request)
     {
         // Mengambil semua pengajuan yang sudah melewati tahap Bendahara
@@ -195,7 +196,7 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $history
+            'data' => $history,
         ]);
     }
 }

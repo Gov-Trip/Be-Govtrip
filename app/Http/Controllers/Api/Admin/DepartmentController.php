@@ -21,6 +21,7 @@ class DepartmentController extends Controller
         ]);
 
         $department = Department::create($validated);
+
         return response()->json(['success' => true, 'message' => 'Departemen berhasil dibuat.', 'data' => $department], 201);
     }
 
@@ -33,17 +34,19 @@ class DepartmentController extends Controller
     {
         $department = Department::findOrFail($id);
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:departments,code,' . $department->id,
+            'code' => 'required|string|max:50|unique:departments,code,'.$department->id,
             'name' => 'required|string|max:150',
         ]);
 
         $department->update($validated);
+
         return response()->json(['success' => true, 'message' => 'Departemen diperbarui.', 'data' => $department]);
     }
 
     public function destroy($id)
     {
         Department::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Departemen dihapus.']);
     }
 }

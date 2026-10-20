@@ -1,18 +1,18 @@
 <?php
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\TravelRequestController;
-use App\Http\Controllers\Api\ApprovalController;
-use App\Http\Controllers\Api\TravelLogisticsController;
-use App\Http\Controllers\Api\FinanceController;
-use App\Http\Controllers\Api\NotificationController;
 
-// Super Admin Routes
+use App\Http\Controllers\Api\Admin\AuditLogController;
+use App\Http\Controllers\Api\Admin\CityController;
 use App\Http\Controllers\Api\Admin\DepartmentController;
 use App\Http\Controllers\Api\Admin\EmployeeController;
-use App\Http\Controllers\Api\Admin\CityController;
 use App\Http\Controllers\Api\Admin\TravelPolicyController;
-use App\Http\Controllers\Api\Admin\AuditLogController;
+use App\Http\Controllers\Api\ApprovalController;
+use App\Http\Controllers\Api\AuthController;
+// Super Admin Routes
+use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\TravelLogisticsController;
+use App\Http\Controllers\Api\TravelRequestController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 

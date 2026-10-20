@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApprovalDecisionRequest;
 use App\Models\TravelRequest;
-use App\Services\ApprovalService;
-use Illuminate\Http\Request;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Services\ApprovalService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 
 class ApprovalController extends Controller
@@ -33,7 +33,7 @@ class ApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $queue
+            'data' => $queue,
         ]);
     }
 
@@ -45,12 +45,12 @@ class ApprovalController extends Controller
             'requester.department',
             'originCity',
             'destinationCity',
-            'approvals.approver' // Tarik juga log persetujuan (kalau misal ada 2 lapis)
+            'approvals.approver', // Tarik juga log persetujuan (kalau misal ada 2 lapis)
         ])->findOrFail($id);
 
         return response()->json([
             'success' => true,
-            'data' => $travelRequest
+            'data' => $travelRequest,
         ]);
     }
 
@@ -60,7 +60,7 @@ class ApprovalController extends Controller
         $departmentId = $user->department_id;
 
         // Bantuan query dasar: Cari semua pengajuan dari departemen Atasan ini
-        $baseQuery = TravelRequest::whereHas('requester', function($q) use ($departmentId) {
+        $baseQuery = TravelRequest::whereHas('requester', function ($q) use ($departmentId) {
             $q->where('department_id', $departmentId);
         });
 
@@ -116,8 +116,8 @@ class ApprovalController extends Controller
                     'sedang_dinas' => $sedangDinasCount,
                 ],
                 'menunggu_list' => $menungguList,
-                'perjalanan_tim' => $perjalananTimList
-            ]
+                'perjalanan_tim' => $perjalananTimList,
+            ],
         ]);
     }
 
@@ -137,8 +137,8 @@ class ApprovalController extends Controller
                 // 1. Notif ke Karyawan
                 $travelRequest->requester->notify(new SystemNotification(
                     "Pengajuan ke {$travelRequest->destinationCity->city_name} disetujui Atasan",
-                    "Diteruskan ke Admin Travel untuk pembelian tiket.",
-                    "success"
+                    'Diteruskan ke Admin Travel untuk pembelian tiket.',
+                    'success'
                 ));
 
                 // 2. Notif ke Group Admin Travel
@@ -147,39 +147,39 @@ class ApprovalController extends Controller
                 })->get();
 
                 Notification::send($adminTravelUsers, new SystemNotification(
-                    "Pengajuan Tiket Baru",
+                    'Pengajuan Tiket Baru',
                     "Segera proses tiket untuk {$travelRequest->requester->name}.",
-                    "info"
+                    'info'
                 ));
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Persetujuan berhasil diproses.',
-                'data' => $travelRequest
+                'data' => $travelRequest,
             ], 200);
 
         } catch (\Exception $e) {
             // Menangkap Exception dari Service (seperti "Akses ditolak. Hanya Atasan Langsung...")
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 400); // <-- Ubah jadi 400 (Bad Request), jangan biarkan jadi 500 atau 403
         }
     }
 
     public function history(Request $request)
-{
-    // Ambil pengajuan yang departemennya sama dengan Atasan, 
-    // TAPI statusnya SUDAH BUKAN 'Menunggu Persetujuan Atasan'
-    $history = TravelRequest::with(['requester'])
-        ->whereHas('requester', function($q) use ($request) {
-            $q->where('department_id', $request->user()->department_id);
-        })
-        ->where('status', '!=', 'Menunggu Persetujuan Atasan')
-        ->latest()
-        ->paginate(10);
+    {
+        // Ambil pengajuan yang departemennya sama dengan Atasan,
+        // TAPI statusnya SUDAH BUKAN 'Menunggu Persetujuan Atasan'
+        $history = TravelRequest::with(['requester'])
+            ->whereHas('requester', function ($q) use ($request) {
+                $q->where('department_id', $request->user()->department_id);
+            })
+            ->where('status', '!=', 'Menunggu Persetujuan Atasan')
+            ->latest()
+            ->paginate(10);
 
-    return response()->json(['success' => true, 'data' => $history]);
-}
+        return response()->json(['success' => true, 'data' => $history]);
+    }
 }

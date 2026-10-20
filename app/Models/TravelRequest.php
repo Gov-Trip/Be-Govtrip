@@ -12,6 +12,7 @@ class TravelRequest extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
@@ -25,6 +26,7 @@ class TravelRequest extends Model
         'estimated_total_cost',
         'advance_payment',
         'status',
+        'rejection_reason',
         'cancel_reason_type',
         'cancel_notes',
     ];

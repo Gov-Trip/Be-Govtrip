@@ -23,7 +23,7 @@ class TravelLogistics extends Model
     {
         return [
             'departure_datetime' => 'datetime',
-            'return_datetime'    => 'datetime',
+            'return_datetime' => 'datetime',
         ];
     }
 

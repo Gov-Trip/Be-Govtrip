@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTravelRequest;
-use App\Services\TravelRequestService;
 use App\Models\TravelRequest;
-use Illuminate\Http\Request;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Services\TravelRequestService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
+use Illuminate\Http\Request;
 
 class TravelRequestController extends Controller
 {
@@ -35,7 +35,7 @@ class TravelRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $myRequests
+            'data' => $myRequests,
         ]);
     }
 
@@ -52,39 +52,38 @@ class TravelRequestController extends Controller
             );
 
             $atasan = User::where('department_id', $request->user()->department_id)
-                          ->where('role', 'ATASAN') 
-                          ->first();
-                          
+                ->where('role', 'ATASAN')
+                ->first();
+
             if ($atasan) {
                 $atasan->notify(new SystemNotification(
                     "Pengajuan baru dari {$request->user()->name}",
-                    "Tujuan: " . $travelRequest->destinationCity->city_name,
-                    "warning"
+                    'Tujuan: '.$travelRequest->destinationCity->city_name,
+                    'warning'
                 ));
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Draft pengajuan perjalanan dinas berhasil dibuat.',
-                'data' =>
-                    [
-                        $travelRequest->only([
-                            'id',
-                            'requester_employee_id',
-                            'origin_city_id',
-                            'destination_city_id',
-                            'departure_date',
-                            'return_date',
-                            'purpose',
-                            'status'
-                        ]),
-                    ]
+                'data' => [
+                    $travelRequest->only([
+                        'id',
+                        'requester_employee_id',
+                        'origin_city_id',
+                        'destination_city_id',
+                        'departure_date',
+                        'return_date',
+                        'purpose',
+                        'status',
+                    ]),
+                ],
             ], 201);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -103,14 +102,14 @@ class TravelRequestController extends Controller
             'expenseReport',       // Karyawan bisa lihat rincian sisa/kurang uang setelah Finance proses
             'auditLogs' => function ($query) {
                 $query->orderBy('created_at', 'asc');
-            }
+            },
         ])
             ->where('requester_employee_id', $userId) // SECURITY: Cegah Karyawan intip ID pengajuan orang lain
             ->findOrFail($id);
 
         return response()->json([
             'success' => true,
-            'data' => $travelRequest
+            'data' => $travelRequest,
         ]);
     }
 
@@ -121,35 +120,35 @@ class TravelRequestController extends Controller
             $userId = $request->user()->id;
 
             $travelRequest = TravelRequest::with([
-                'requester.department', 
-                'originCity', 
-                'destinationCity', 
-                'assignees.employee'
+                'requester.department',
+                'originCity',
+                'destinationCity',
+                'assignees.employee',
             ])
-            ->where('requester_employee_id', $userId)
-            ->findOrFail($id);
+                ->where('requester_employee_id', $userId)
+                ->findOrFail($id);
 
-            if (!$travelRequest->sppd_number) {
+            if (! $travelRequest->sppd_number) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dokumen SPPD belum diterbitkan oleh Admin Travel.'
+                    'message' => 'Dokumen SPPD belum diterbitkan oleh Admin Travel.',
                 ], 403);
             }
 
             // Menggunakan Facade Pdf yang sudah di-import di atas
             $pdf = Pdf::loadView('pdf.sppd', [
-                'travelRequest' => $travelRequest
+                'travelRequest' => $travelRequest,
             ]);
-            
+
             $pdf->setPaper('A4', 'portrait');
-            $fileName = 'SPPD_' . str_replace('/', '_', $travelRequest->sppd_number) . '.pdf';
+            $fileName = 'SPPD_'.str_replace('/', '_', $travelRequest->sppd_number).'.pdf';
 
             return $pdf->stream($fileName);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengunduh SPPD: ' . $e->getMessage()
+                'message' => 'Gagal mengunduh SPPD: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -170,13 +169,13 @@ class TravelRequestController extends Controller
                 'expenseReport',
                 'attachments',
             ])
-            ->where('requester_employee_id', $userId)
-            ->findOrFail($id);
+                ->where('requester_employee_id', $userId)
+                ->findOrFail($id);
 
             if ($travelRequest->status !== 'Selesai') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'LPJ Final belum dapat diunduh karena proses verifikasi Finance belum berstatus Selesai.'
+                    'message' => 'LPJ Final belum dapat diunduh karena proses verifikasi Finance belum berstatus Selesai.',
                 ], 403);
             }
 
@@ -186,22 +185,22 @@ class TravelRequestController extends Controller
 
             // Menggunakan Facade Pdf yang sudah di-import di atas
             $pdf = Pdf::loadView('pdf.lpj_final', [
-                'travelRequest'  => $travelRequest, 
-                'advancePayment' => $advancePayment, 
-                'realExpense'    => $realExpense, 
-                'balance'        => $balance
+                'travelRequest' => $travelRequest,
+                'advancePayment' => $advancePayment,
+                'realExpense' => $realExpense,
+                'balance' => $balance,
             ]);
-            
+
             $pdf->setPaper('A4', 'portrait');
             $sppdNumber = $travelRequest->sppd_number ?? $travelRequest->id;
-            $fileName = 'LPJ_FINAL_' . str_replace('/', '_', $sppdNumber) . '.pdf';
+            $fileName = 'LPJ_FINAL_'.str_replace('/', '_', $sppdNumber).'.pdf';
 
             return $pdf->stream($fileName);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengunduh LPJ Final: ' . $e->getMessage()
+                'message' => 'Gagal mengunduh LPJ Final: '.$e->getMessage(),
             ], 500);
         }
     }

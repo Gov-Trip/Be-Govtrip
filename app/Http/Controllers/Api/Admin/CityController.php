@@ -17,9 +17,10 @@ class CityController extends Controller
     {
         $validated = $request->validate([
             'province_name' => 'required|string|max:100',
-            'city_name'     => 'required|string|max:100',
+            'city_name' => 'required|string|max:100',
         ]);
         $city = RefCity::create($validated);
+
         return response()->json(['success' => true, 'data' => $city], 201);
     }
 
@@ -33,15 +34,17 @@ class CityController extends Controller
         $city = RefCity::findOrFail($id);
         $validated = $request->validate([
             'province_name' => 'required|string|max:100',
-            'city_name'     => 'required|string|max:100',
+            'city_name' => 'required|string|max:100',
         ]);
         $city->update($validated);
+
         return response()->json(['success' => true, 'data' => $city]);
     }
 
     public function destroy($id)
     {
         RefCity::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Kota dihapus.']);
     }
 }

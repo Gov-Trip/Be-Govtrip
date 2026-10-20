@@ -21,10 +21,10 @@ class TravelPolicy extends Model
     protected function casts(): array
     {
         return [
-            'daily_allowance'    => 'decimal:2',
-            'max_hotel_rate'     => 'decimal:2',
+            'daily_allowance' => 'decimal:2',
+            'max_hotel_rate' => 'decimal:2',
             'max_transport_rate' => 'decimal:2',
-            'effective_year'     => 'integer',
+            'effective_year' => 'integer',
         ];
     }
 

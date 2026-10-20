@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -14,17 +14,17 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kredensial tidak valid.'
+                'message' => 'Kredensial tidak valid.',
             ], 401);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return response()->json([
                 'success' => false,
-                'message' => 'Akun Anda dinonaktifkan.'
+                'message' => 'Akun Anda dinonaktifkan.',
             ], 403);
         }
 
@@ -34,11 +34,11 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login berhasil.',
-            'data'    => [
+            'data' => [
                 'access_token' => $token,
-                'token_type'   => 'Bearer',
-                'user'         => $user->load('employee.department')
-            ]
+                'token_type' => 'Bearer',
+                'user' => $user->load('employee.department'),
+            ],
         ]);
     }
 
@@ -46,7 +46,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => $request->user()->load('employee.department')
+            'data' => $request->user()->load('employee.department'),
         ]);
     }
 
@@ -56,7 +56,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logout berhasil.'
+            'message' => 'Logout berhasil.',
         ]);
     }
 }

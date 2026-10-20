@@ -13,10 +13,10 @@ class CheckDepartment
         $user = $request->user();
 
         // 1. Pastikan user memiliki relasi employee dan department
-        if (!$user || !$user->employee || !$user->employee->department) {
+        if (! $user || ! $user->employee || ! $user->employee->department) {
             return response()->json([
                 'success' => false,
-                'message' => 'Akses ditolak. Profil pegawai atau departemen tidak ditemukan.'
+                'message' => 'Akses ditolak. Profil pegawai atau departemen tidak ditemukan.',
             ], 403);
         }
 
@@ -32,10 +32,10 @@ class CheckDepartment
         $allowedDepartments = array_map('strtoupper', $allowedDepartments);
 
         // 5. Cek apakah kode departemen user ada di dalam daftar yang diizinkan route
-        if (!in_array($userDeptCode, $allowedDepartments)) {
+        if (! in_array($userDeptCode, $allowedDepartments)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Akses ditolak. Anda tidak memiliki wewenang untuk mengakses modul ini.'
+                'message' => 'Akses ditolak. Anda tidak memiliki wewenang untuk mengakses modul ini.',
             ], 403);
         }
 

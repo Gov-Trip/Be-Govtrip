@@ -10,7 +10,9 @@ class SystemNotification extends Notification
     use Queueable;
 
     protected $title;
+
     protected $message;
+
     protected $type;
 
     public function __construct($title, $message, $type = 'info')
@@ -28,9 +30,9 @@ class SystemNotification extends Notification
     public function toDatabase($notifiable): array
     {
         return [
-            'title'   => $this->title,
+            'title' => $this->title,
             'message' => $this->message,
-            'type'    => $this->type,
+            'type' => $this->type,
         ];
     }
 }
