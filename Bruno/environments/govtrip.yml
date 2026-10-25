@@ -1,0 +1,6 @@
+name: govtrip
+variables:
+  - name: token
+    value: 20|DR8OD5SF6gdyaCLuSScvTPclHX4sg37CLIZ76r6k5161a31b
+  - name: travel_id
+    value: 01a172e5-c8ef-70a6-a43c-4e194a8d0e9c

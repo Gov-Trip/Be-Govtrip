@@ -13,16 +13,23 @@ http:
     type: json
     data: |-
       {
-          "origin_city_id": 1,
-          "destination_city_id": 2,
-          "start_date": "2026-10-10",
-          "end_date": "2026-10-12",
-          "purpose": "Kunjungan Lapangan serta rapat",
-          "status": "Menunggu Atasan"
+        "origin_city_id": 1,
+        "destination_city_id": 3,
+        "start_date": "2026-11-05",
+        "end_date": "2026-11-07",
+        "purpose": "Govtrip testing ygy"
       }
   auth:
     type: bearer
-    token: 1|Ws1SKIfaiRj1P5Kcodb90rz7zL8kTBtdFu1Wn50u0055c92e
+    token: 7|vSI0Cuu4zE50qjhvVl186pTOfHbped0nRPcJwmGT35b46158
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201 && res.body.data && res.body.data.id) {
+          bru.setEnvVar("travel_id", res.body.data.id);
+        }
 
 settings:
   encodeUrl: true

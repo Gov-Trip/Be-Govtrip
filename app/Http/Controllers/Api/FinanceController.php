@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FinanceVerifyRequest;
-use App\Models\ExpenseReport;
 use App\Models\TravelRequest;
+use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Services\FinanceService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class FinanceController extends Controller
 {
@@ -21,70 +22,77 @@ class FinanceController extends Controller
         $this->financeService = $financeService;
     }
 
-    // 1. Tampilkan antrean SPJ yang minta diverifikasi
+    // 1. Tampilkan antrean yang butuh diverifikasi Finance
     public function index(Request $request)
     {
-        $status = $request->query('status', 'Siap Berangkat');
+        $status = $request->query('status');
 
-        $queue = TravelRequest::with(['requester', 'destinationCity'])
-            ->where('status', $status)
-            ->latest()
-            ->paginate(10);
+        $query = TravelRequest::with(['requester.department', 'originCity', 'destinationCity', 'logistics', 'expenseReport']);
+
+        if ($status) {
+            $query->where('status', $status);
+        } else {
+            // Default: tampilkan semua yang siap diverifikasi Finance
+            $query->whereIn('status', ['Siap Berangkat', 'Menunggu Verifikasi LPJ']);
+        }
+
+        $queue = $query->latest()->paginate(10);
 
         return response()->json([
             'success' => true,
-            'data' => $queue,
+            'data'    => $queue,
         ]);
     }
 
+    // 2. Dashboard Ringkas Finance
     public function dashboard(Request $request)
     {
-        $perluDiverifikasi = TravelRequest::where('status', 'Menunggu Verifikasi LPJ')->count();
+        $perluDiverifikasi = TravelRequest::whereIn('status', ['Siap Berangkat', 'Menunggu Verifikasi LPJ'])->count();
 
         $terverifikasiBulanIni = TravelRequest::where('status', 'Selesai')
             ->whereMonth('updated_at', now()->month)
             ->whereYear('updated_at', now()->year)
             ->count();
 
-        $dikembalikan = TravelRequest::where('status', 'Revisi LPJ')
+        $dikembalikan = TravelRequest::whereIn('status', ['Revisi Admin Travel', 'Revisi LPJ'])
             ->whereMonth('updated_at', now()->month)
             ->count();
 
-        // Total Realisasi (Menjumlahkan total_expense dari tabel expense_reports bulan ini)
-        $totalRealisasi = ExpenseReport::whereHas('travelRequest', function ($q) {
-            $q->where('status', 'Selesai')
-                ->whereMonth('updated_at', now()->month)
-                ->whereYear('updated_at', now()->year);
-        })->sum('total_expense');
+        // Total Realisasi Anggaran yang sudah dicairkan/diverifikasi bulan ini
+        $totalRealisasi = (float) TravelRequest::where('status', 'Selesai')
+            ->whereMonth('updated_at', now()->month)
+            ->whereYear('updated_at', now()->year)
+            ->sum('advance_payment');
 
-        // Antrean Verifikasi (Ambil 5 teratas)
-        $antreanVerifikasi = TravelRequest::with(['requester', 'expenseReport'])
-            ->where('status', 'Menunggu Verifikasi LPJ')
+        // Antrean Verifikasi (5 teratas)
+        $antreanVerifikasi = TravelRequest::with(['requester.department', 'originCity', 'destinationCity', 'logistics', 'expenseReport'])
+            ->whereIn('status', ['Siap Berangkat', 'Menunggu Verifikasi LPJ'])
             ->latest()
             ->take(5)
             ->get();
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'summary' => [
-                    'perlu_diverifikasi' => $perluDiverifikasi,
+                    'perlu_diverifikasi'      => $perluDiverifikasi,
                     'terverifikasi_bulan_ini' => $terverifikasiBulanIni,
-                    'dikembalikan' => $dikembalikan,
-                    'total_realisasi' => $totalRealisasi,
+                    'dikembalikan'            => $dikembalikan,
+                    'total_realisasi'         => $totalRealisasi,
                 ],
                 'antrean_verifikasi' => $antreanVerifikasi,
             ],
         ]);
     }
 
-    // SHOW: Detail "Stopmap" lengkap sebelum mencairkan dana
+    // 3. Detail "Stopmap" Lengkap Sebelum Mencairkan Dana
     public function show($id)
     {
         $travelRequest = TravelRequest::with([
             'requester.department',
             'originCity',
             'destinationCity',
+            'assignees.employee',
             'approvals.approver',
             'logistics',
             'expenseReport',
@@ -93,17 +101,14 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $travelRequest,
+            'data'    => $travelRequest,
         ]);
     }
 
-    // 2. Verifikasi nota & laporan (ACC / Revisi)
+    // 4. Verifikasi Administrasi & Pencairan Dana (ACC / Revisi)
     public function verify(FinanceVerifyRequest $request, $id)
     {
         try {
-            $travelRequest = TravelRequest::findOrFail($id);
-            // $this->authorize('verify', $travelRequest); // Cek Policy bentrok kepentingan
-
             $result = $this->financeService->verifyExpense(
                 $id,
                 $request->user(),
@@ -112,16 +117,37 @@ class FinanceController extends Controller
                 $request->userAgent()
             );
 
-            $result->requester->notify(new SystemNotification(
-                'SPPD dan Dana Siap!',
-                'Dana Advance telah disetujui. Dokumen SPPD siap diunduh.',
-                'success'
-            ));
+            if ($result->status === 'Selesai') {
+                // Jika disetujui: Beri tahu Karyawan bahwa SPPD & Dana sudah siap
+                $requesterUser = User::find($result->requester->user_id ?? null);
+                if ($requesterUser) {
+                    $requesterUser->notify(new SystemNotification(
+                        'SPPD dan Dana Siap! ✅',
+                        'Anggaran perjalanan telah diverifikasi Finance. Dokumen SPPD siap diunduh.',
+                        'success'
+                    ));
+                }
+            } else {
+                // Jika ditolak: Beri tahu Admin Travel untuk memperbaiki logistik/administrasi
+                $adminTravelUsers = User::whereHas('employee.department', function ($q) {
+                    $q->where('code', 'ADMIN_TRAVEL');
+                })->get();
+
+                if ($adminTravelUsers->isNotEmpty()) {
+                    Notification::send($adminTravelUsers, new SystemNotification(
+                        'Revisi Administrasi Logistik ⚠️',
+                        "Finance mengembalikan berkas {$result->requester->name}. Catatan: " . ($result->rejection_reason ?? '-'),
+                        'error'
+                    ));
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Laporan SPJ berhasil diverifikasi.',
-                'data' => $result,
+                'message' => $result->status === 'Selesai'
+                    ? 'Verifikasi berhasil. Dana disetujui dan proses perjalanan dinas selesai.'
+                    : 'Berkas dikembalikan ke Admin Travel untuk diperbaiki.',
+                'data'    => $result,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -131,72 +157,101 @@ class FinanceController extends Controller
         }
     }
 
-    // 3. Download LPJ Final (Ultimate Audit Trail)
+    // 5. Endpoint Khusus Tolak / Revisi (Jika FE menembak form penolakan terpisah)
+    public function reject(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'rejection_reason' => 'required|string|min:5|max:500',
+        ]);
+
+        try {
+            $result = $this->financeService->verifyExpense(
+                $id,
+                $request->user(),
+                [
+                    'is_valid'         => false,
+                    'notes'            => $validated['rejection_reason'],
+                    'rejection_reason' => $validated['rejection_reason'],
+                ],
+                $request->ip(),
+                $request->userAgent()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Berkas berhasil dikembalikan untuk revisi.',
+                'data'    => $result,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    // 6. Download Dokumen Audit / LPJ Final (PDF)
     public function downloadFinalAuditReport($id)
     {
         try {
-            // Eager load semua relasi untuk "Kertas Kerja" Auditor
             $travelRequest = TravelRequest::with([
                 'requester.department',
                 'originCity',
                 'destinationCity',
                 'assignees.employee',
-                'approvals.approver',   // Jejak ACC Atasan, Kabid, Kadis
-                'logistics',            // Bukti tiket pesawat/hotel
-                'expenseReport',        // Rincian uang
-                'attachments',          // Nota-nota
+                'approvals.approver',
+                'logistics',
+                'expenseReport',
+                'attachments',
                 'auditLogs' => function ($query) {
-                    $query->whereIn('action', ['SUBMIT_SPJ', 'VERIFY_SPJ']);
+                    $query->orderBy('created_at', 'asc');
                 },
             ])->findOrFail($id);
 
             if ($travelRequest->status !== 'Selesai') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'LPJ Final belum bisa dicetak karena proses belum berstatus Selesai.',
+                    'message' => 'Dokumen Final belum bisa dicetak karena proses belum berstatus Selesai.',
                 ], 403);
             }
 
-            $advancePayment = $travelRequest->advance_payment ?? 0;
-            $realExpense = $travelRequest->expenseReport->total_expense ?? 0;
+            $advancePayment = (float) ($travelRequest->advance_payment ?? 0);
+            $realExpense = (float) ($travelRequest->expenseReport->total_real_expense ?? $advancePayment);
             $balance = $advancePayment - $realExpense;
 
-            // PERBAIKAN: Ubah 'pdf.template' ke 'pdf.lpj_final' dan ubah key 'data' menjadi 'travelRequest'
             $pdf = Pdf::loadView('pdf.lpj_final', [
-                'travelRequest' => $travelRequest,
+                'travelRequest'  => $travelRequest,
                 'advancePayment' => $advancePayment,
-                'realExpense' => $realExpense,
-                'balance' => $balance,
+                'realExpense'    => $realExpense,
+                'balance'        => $balance,
             ]);
 
             $pdf->setPaper('A4', 'portrait');
 
             $sppd = $travelRequest->sppd_number ?? $travelRequest->id;
-            $fileName = 'LPJ_FINAL_'.str_replace('/', '_', $sppd).'.pdf';
+            $fileName = 'LPJ_FINAL_' . str_replace('/', '_', $sppd) . '.pdf';
 
-            // Aku ganti ke stream() agar kamu bisa lihat preview-nya di Bruno tanpa harus buka folder download PC-mu
             return $pdf->stream($fileName);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mencetak dokumen: '.$e->getMessage(),
+                'message' => 'Gagal mencetak dokumen: ' . $e->getMessage(),
             ], 500);
         }
     }
 
+    // 7. Riwayat Verifikasi Finance
     public function history(Request $request)
     {
-        // Mengambil semua pengajuan yang sudah melewati tahap Bendahara
-        // (Status Selesai atau Revisi LPJ)
-        $history = TravelRequest::with(['requester'])
-            ->whereIn('status', ['Selesai', 'Revisi LPJ']) // Sesuaikan enum statusmu
+        $history = TravelRequest::with(['requester.department', 'originCity', 'destinationCity', 'logistics', 'expenseReport'])
+            ->whereIn('status', ['Selesai', 'Revisi Admin Travel', 'Revisi LPJ'])
             ->latest()
             ->paginate(10);
 
         return response()->json([
             'success' => true,
-            'data' => $history,
+            'data'    => $history,
         ]);
     }
 }

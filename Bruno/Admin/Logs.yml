@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:8000/api/
+  url: http://localhost:8000/api/super-admin/audit-logs
   auth: inherit
 
 settings:

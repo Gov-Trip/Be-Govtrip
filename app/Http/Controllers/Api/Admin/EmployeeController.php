@@ -110,4 +110,56 @@ class EmployeeController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Akun pegawai dinonaktifkan.']);
     }
+
+    // PATCH /api/super-admin/employees/{id}/toggle-status
+    public function toggleStatus(Request $request, $id)
+    {
+        try {
+            $employee = Employee::with('user')->findOrFail($id);
+
+            if (! $employee->user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pegawai ini belum memiliki akun pengguna terkait.',
+                ], 404);
+            }
+
+            if ($employee->user->id === $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak dapat menonaktifkan akun Super Admin yang sedang digunakan.',
+                ], 400);
+            }
+
+            $employee->user->is_active = ! $employee->user->is_active;
+            $employee->user->save();
+
+            $statusLabel = $employee->user->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+            AuditLog::create([
+                'user_id'     => $request->user()->id,
+                'action'      => 'TOGGLE_USER_STATUS',
+                'module'      => 'SUPER_ADMIN',
+                'description' => "Akun {$employee->name} berhasil {$statusLabel}.",
+                'ip_address'  => $request->ip(),
+                'user_agent'  => $request->userAgent(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Status akun {$employee->name} berhasil {$statusLabel}.",
+                'data'    => [
+                    'employee_id' => $employee->id,
+                    'user_id'     => $employee->user->id,
+                    'is_active'   => (bool) $employee->user->is_active,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+    
 }

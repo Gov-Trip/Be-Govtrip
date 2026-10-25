@@ -15,6 +15,14 @@ http:
       }
   auth: inherit
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body.data && res.body.data.access_token) {
+          bru.setEnvVar("token", res.body.data.access_token);
+        }
+
 settings:
   encodeUrl: true
   timeout: 0

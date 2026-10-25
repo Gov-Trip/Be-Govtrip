@@ -33,6 +33,10 @@ class Employee extends Model
     {
         return $this->belongsTo(Employee::class, 'direct_supervisor_id');
     }
+    public function supervisor()
+    {
+        return $this->belongsTo(Employee::class, 'direct_supervisor_id');
+    }
 
     public function subordinates()
     {

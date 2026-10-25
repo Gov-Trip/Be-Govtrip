@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8000/api/finance/verifications/01a0bde4-607a-7117-87a3-e1b054385a62
+  url: http://localhost:8000/api/finance/verifications/{{travel_id}}
   body:
     type: json
     data: |-
@@ -14,9 +14,7 @@ http:
           "advance_payment": 2500000,
           "notes": "Dana dicairkan untuk tiket kereta dan penginapan sesuai SBM."
       }
-  auth:
-    type: bearer
-    token: 4|3AHE9cwlFngyUs3RwTsXKmrCc4T71GHXKOZ5hRFzd47cae03
+  auth: inherit
 
 settings:
   encodeUrl: true

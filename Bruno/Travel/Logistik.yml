@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8000/api/travel-admin/01a0bde4-607a-7117-87a3-e1b054385a62/logistics
+  url: http://localhost:8000/api/logistics/{{travel_id}}
   headers:
     - name: Accept
       value: application/json
@@ -13,15 +13,13 @@ http:
     type: json
     data: |-
       {
-          "transport_type": "Kereta Api Eksekutif",
-          "booking_code_or_ticket": "KAI-987654321A",
-          "hotel_name": "Hotel Santika Premiere",
-          "departure_datetime": "2026-10-10 08:00:00",
-          "return_datetime": "2026-10-12 15:00:00"
+        "transport_type": "Pesawat Udara",
+        "booking_code_or_ticket": "GA-312-SUB99",
+        "hotel_name": "Hotel Bumi Surabaya City Resort",
+        "departure_datetime": "2026-11-05 07:30:00",
+        "return_datetime": "2026-11-07 19:45:00"
       }
-  auth:
-    type: bearer
-    token: 3|Q4SUQ2hViEAz1Njz8PAbTdiBk2YLnlRXpiEqmOwxc902376d
+  auth: inherit
 
 settings:
   encodeUrl: true
