@@ -5,7 +5,14 @@ info:
 
 http:
   method: POST
-  url: http://localhost:8000/api/Login
+  url: http://localhost:8000/api/login
+  body:
+    type: json
+    data: |-
+      {
+        "email": "admin@gov.trip",
+        "password": "password123"
+      }
   auth: inherit
 
 runtime:

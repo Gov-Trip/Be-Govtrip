@@ -1,0 +1,30 @@
+info:
+  name: make employee
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: http://localhost:8000/api/super-admin/employees
+  body:
+    type: json
+    data: |-
+      {
+        "email": "staf.baru@gov.trip",
+        "password": "password123",
+        "department_id": 4,
+        "nip": "100000008",
+        "name": "Fajar Sidik",
+        "position": "Analis Data",
+        "grade": "Staff",
+        "direct_supervisor_id": 4,
+        "is_active": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
