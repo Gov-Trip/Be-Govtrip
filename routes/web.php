@@ -25,6 +25,9 @@ Route::prefix('pegawai')->name('pegawai.')->group(function () {
     Route::get('/', [DashboardController::class, 'pegawaiDashboard'])->name('dashboard');
     Route::get('/pengajuan', [DashboardController::class, 'pegawaiPengajuan'])->name('pengajuan');
     Route::post('/pengajuan', [DashboardController::class, 'pegawaiStorePengajuan'])->name('pengajuan.store');
+    Route::get('/pengajuan/{id}/edit', [DashboardController::class, 'pegawaiEditPengajuan'])->name('pengajuan.edit');
+    Route::match(['put', 'post'], '/pengajuan/{id}', [DashboardController::class, 'pegawaiUpdatePengajuan'])->name('pengajuan.update');
+    Route::post('/pengajuan/{id}/submit', [DashboardController::class, 'pegawaiSubmitPengajuan'])->name('pengajuan.submit');
     Route::get('/perjalanan', [DashboardController::class, 'pegawaiPerjalanan'])->name('perjalanan');
     Route::get('/sppd', [DashboardController::class, 'pegawaiSppd'])->name('sppd');
     Route::get('/lpj', [DashboardController::class, 'pegawaiLpj'])->name('lpj');
@@ -63,6 +66,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/pegawai', [DashboardController::class, 'adminPegawai'])->name('pegawai');
     Route::get('/perjalanan', [DashboardController::class, 'adminPerjalanan'])->name('perjalanan');
     Route::post('/logistics', [DashboardController::class, 'adminStoreLogistics'])->name('logistics.store');
+    Route::post('/logistics/reject', [DashboardController::class, 'adminRejectLogistics'])->name('logistics.reject');
     Route::get('/dokumen', [DashboardController::class, 'adminDokumen'])->name('dokumen');
     Route::get('/sppd', [DashboardController::class, 'adminSppd'])->name('sppd');
     Route::get('/monitoring', [DashboardController::class, 'adminMonitoring'])->name('monitoring');
@@ -73,9 +77,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/', [DashboardController::class, 'superadminDashboard'])->name('dashboard');
     Route::get('/pengguna', [DashboardController::class, 'superadminPengguna'])->name('pengguna');
+    Route::post('/pengguna', [DashboardController::class, 'superadminStorePengguna'])->name('pengguna.store');
     Route::get('/akses', [DashboardController::class, 'superadminAkses'])->name('akses');
+    Route::post('/akses', [DashboardController::class, 'superadminUpdateAkses'])->name('akses.update');
+    Route::post('/akses/reset', [DashboardController::class, 'superadminResetAkses'])->name('akses.reset');
     Route::get('/konfigurasi', [DashboardController::class, 'superadminKonfigurasi'])->name('konfigurasi');
     Route::get('/audit', [DashboardController::class, 'superadminAudit'])->name('audit');
     Route::get('/unit', [DashboardController::class, 'superadminUnit'])->name('unit');
     Route::get('/notifikasi', [DashboardController::class, 'superadminNotifikasi'])->name('notifikasi');
 });
+
+// Document Downloads
+Route::get('/travel-requests/{id}/download-sppd', [DashboardController::class, 'downloadSppd'])->name('travel-requests.download-sppd');
+Route::get('/travel-requests/{id}/download-lpj', [DashboardController::class, 'downloadLpjFinal'])->name('travel-requests.download-lpj');

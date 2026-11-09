@@ -2,55 +2,40 @@
     <x-card>
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8EEF3] mb-6">
             <div>
-                <h3 class="text-[#123B72] text-[16px] font-semibold leading-tight">Master Data Unit Kerja</h3>
-                <p class="text-[#64748B] text-[12.5px] mt-0.5">Struktur organisasi dan bidang penanggungjawab anggaran</p>
+                <h3 class="text-[#123B72] text-[16px] font-semibold leading-tight">Master Data Unit Kerja / SKPD</h3>
+                <p class="text-[#64748B] text-[12.5px] mt-0.5">Struktur organisasi dan departemen penanggung jawab anggaran</p>
             </div>
-            <button type="button" onclick="alert('Unit kerja baru berhasil ditambahkan!');"
-                    class="px-4 py-2 text-[12.5px] font-semibold bg-[#0066B3] hover:bg-[#005596] text-white rounded-[10px] transition-colors cursor-pointer">
-                + Tambah Unit Kerja
-            </button>
         </div>
 
         <div class="w-full overflow-x-auto">
             <table class="w-full text-left border-collapse text-[13px]">
-                <thead class="border-b border-[#E8EEF3]">
+                <thead class="border-b border-[#E8EEF3] bg-slate-50">
                     <tr>
-                        <th class="py-2.5 px-3 text-[#64748B] text-[12px] font-medium">Kode</th>
-                        <th class="py-2.5 px-3 text-[#64748B] text-[12px] font-medium">Nama Unit Kerja / SKPD</th>
-                        <th class="py-2.5 px-3 text-[#64748B] text-[12px] font-medium">Kepala Unit</th>
-                        <th class="py-2.5 px-3 text-[#64748B] text-[12px] font-medium">Jumlah Staf</th>
-                        <th class="py-2.5 px-3 text-[#64748B] text-[12px] font-medium">Alokasi Pagu</th>
+                        <th class="py-2.5 px-3 text-[#123B72] font-semibold">Kode SKPD</th>
+                        <th class="py-2.5 px-3 text-[#123B72] font-semibold">Nama Unit Kerja / Divisi</th>
+                        <th class="py-2.5 px-3 text-[#64748B] font-medium text-center">Jumlah Pegawai</th>
+                        <th class="py-2.5 px-3 text-[#64748B] font-medium text-right">Dibuat Pada</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E8EEF3]">
-                    <tr class="hover:bg-[#F1F7FB]/50">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">PROGRAM</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Perencanaan & Program</td>
-                        <td class="py-3 px-3 text-[#64748B]">Bpk. Hendra Pratama, M.Si.</td>
-                        <td class="py-3 px-3 text-[#64748B]">34 Pegawai</td>
-                        <td class="py-3 px-3 font-semibold text-[#0066B3]">Rp 150.000.000</td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">FINANCE</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Divisi Keuangan & Aset</td>
-                        <td class="py-3 px-3 text-[#64748B]">Ibu Ratna Dewi, S.E.</td>
-                        <td class="py-3 px-3 text-[#64748B]">12 Pegawai</td>
-                        <td class="py-3 px-3 font-semibold text-[#0066B3]">Rp 80.000.000</td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">ADMIN_TRAVEL</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Logistik & Akomodasi</td>
-                        <td class="py-3 px-3 text-[#64748B]">Bpk. Surya Kencana</td>
-                        <td class="py-3 px-3 text-[#64748B]">8 Pegawai</td>
-                        <td class="py-3 px-3 font-semibold text-[#0066B3]">Rp 120.000.000</td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">SUPER_ADMIN</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">IT & System Admin</td>
-                        <td class="py-3 px-3 text-[#64748B]">Bpk. Bambang Wijaya</td>
-                        <td class="py-3 px-3 text-[#64748B]">5 Pegawai</td>
-                        <td class="py-3 px-3 font-semibold text-[#0066B3]">Rp 50.000.000</td>
-                    </tr>
+                    @forelse($units ?? [] as $unit)
+                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
+                            <td class="py-3 px-3 font-mono font-bold text-[#123B72]">{{ $unit->code }}</td>
+                            <td class="py-3 px-3 font-semibold text-[#1E293B]">{{ $unit->name }}</td>
+                            <td class="py-3 px-3 text-center">
+                                <span class="px-2.5 py-0.5 rounded-full text-[11.5px] bg-[#E3F0FA] text-[#0066B3] font-medium">
+                                    {{ $unit->employees_count ?? $unit->employees()->count() }} Pegawai
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-right text-[#64748B] text-[12px]">
+                                {{ \Carbon\Carbon::parse($unit->created_at)->translatedFormat('d M Y') }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="py-6 text-center text-[#64748B]">Belum ada unit kerja yang terdaftar.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

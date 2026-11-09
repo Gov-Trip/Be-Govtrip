@@ -141,7 +141,7 @@ class TravelRequestService
         }
     }
 
-    // 3. Fungsi Kirim / Ajukan Ulang Pengajuan ke Atasan
+    // 3. Fungsi Kirim / Ajukan Ulang Pengajuan ke Atasan (dengan Cek Matriks Hak Akses Super Admin)
     public function submitToAtasan($travelRequestId, User $user, $ipAddress, $userAgent): TravelRequest
     {
         $employee = $user->employee;
@@ -152,22 +152,51 @@ class TravelRequestService
             throw new Exception("Pengajuan ini tidak dapat dikirim karena status saat ini adalah: {$travelRequest->status}");
         }
 
+        // Cek Matriks Hak Akses Super Admin: Apakah Pegawai punya hak bypass "Setujui Pengajuan"?
+        $matrixService = app(PermissionMatrixService::class);
+        $hasBypass = $matrixService->hasPermission($user, 'setujui_pengajuan');
+
         DB::beginTransaction();
         try {
-            $travelRequest->update([
-                'status' => 'Menunggu Persetujuan Atasan',
-                'rejection_reason' => null,
-            ]);
+            if ($hasBypass) {
+                // YA (Fast-Track Bypass) -> TERBIT NOMOR SPPD OTOMATIS [Status: Disetujui]
+                $sppdNumber = $travelRequest->sppd_number;
+                if (! $sppdNumber) {
+                    $sppdNumber = '090/SPPD-'.strtoupper(substr($travelRequest->id, 0, 4)).'/'.now()->format('m/Y');
+                }
 
-            AuditLog::create([
-                'travel_request_id' => $travelRequest->id,
-                'user_id' => $user->id,
-                'action' => 'SUBMIT_REQUEST',
-                'module' => 'TRAVEL_REQUEST',
-                'description' => 'Pengajuan dikirim ke Atasan Langsung.',
-                'ip_address' => $ipAddress,
-                'user_agent' => $userAgent,
-            ]);
+                $travelRequest->update([
+                    'status' => 'Disetujui',
+                    'sppd_number' => $sppdNumber,
+                    'rejection_reason' => null,
+                ]);
+
+                AuditLog::create([
+                    'travel_request_id' => $travelRequest->id,
+                    'user_id' => $user->id,
+                    'action' => 'FAST_TRACK_BYPASS_APPROVAL',
+                    'module' => 'APPROVAL',
+                    'description' => "Pengajuan disetujui otomatis melalui hak akses bypass matriks Super Admin. Nomor SPPD: {$sppdNumber}",
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
+                ]);
+            } else {
+                // TIDAK (Normal) -> APPROVAL ATASAN [Status: Menunggu Persetujuan Atasan]
+                $travelRequest->update([
+                    'status' => 'Menunggu Persetujuan Atasan',
+                    'rejection_reason' => null,
+                ]);
+
+                AuditLog::create([
+                    'travel_request_id' => $travelRequest->id,
+                    'user_id' => $user->id,
+                    'action' => 'SUBMIT_REQUEST',
+                    'module' => 'TRAVEL_REQUEST',
+                    'description' => 'Pengajuan dikirim ke Atasan Langsung.',
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
+                ]);
+            }
 
             DB::commit();
 

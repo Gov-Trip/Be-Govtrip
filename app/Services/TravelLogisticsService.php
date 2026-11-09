@@ -87,16 +87,18 @@ class TravelLogisticsService
 
         DB::beginTransaction();
         try {
+            $adminEmpId = $adminUser->employee?->id ?? Employee::whereHas('department', fn ($q) => $q->where('code', 'ADMIN_TRAVEL'))->value('id') ?? 1;
+
             // 1. Simpan atau perbarui data tiket/hotel
             TravelLogistics::updateOrCreate(
                 ['travel_request_id' => $travelRequest->id],
                 [
-                    'admin_travel_id' => $adminUser->employee->id,
+                    'admin_travel_id' => $adminEmpId,
                     'transport_type' => $data['transport_type'],
                     'booking_code_or_ticket' => $data['booking_code_or_ticket'],
                     'hotel_name' => $data['hotel_name'] ?? null,
                     'departure_datetime' => $data['departure_datetime'],
-                    'return_datetime' => $data['return_datetime'],
+                    'return_datetime' => $data['return_datetime'] ?? $data['departure_datetime'],
                 ]
             );
 

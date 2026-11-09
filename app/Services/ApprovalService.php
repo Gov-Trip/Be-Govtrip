@@ -35,9 +35,13 @@ class ApprovalService
             throw new Exception("Pengajuan ini tidak sedang dalam antrean persetujuan (Status saat ini: {$currentStatus}).");
         }
 
-        // 2. Validasi Hak Akses (Hanya Atasan Langsung atau satu departemen)
-        if ($travelRequest->requester->direct_supervisor_id !== $approver->id) {
-            throw new Exception('Akses ditolak. Hanya Atasan Langsung yang dapat memproses tahap ini.');
+        // 2. Validasi Hak Akses (Hanya Atasan Langsung, Pejabat Manajerial, atau Super Admin)
+        $isSupervisor = $travelRequest->requester && $travelRequest->requester->direct_supervisor_id === $approver->id;
+        $isSuperAdmin = ($approverUser->employee?->department?->code === 'SUPER_ADMIN');
+        $isManagerOrLeader = in_array($approver->grade, ['Manager', 'Director']) || str_contains(strtolower($approver->position ?? ''), 'kepala') || str_contains(strtolower($approver->position ?? ''), 'kadis') || str_contains(strtolower($approver->position ?? ''), 'kabid');
+
+        if (! $isSupervisor && ! $isSuperAdmin && ! $isManagerOrLeader) {
+            throw new Exception('Akses ditolak. Hanya Atasan Langsung atau pejabat berwenang yang dapat memproses tahap ini.');
         }
 
         // Ambil catatan / alasan penolakan dari notes atau rejection_reason

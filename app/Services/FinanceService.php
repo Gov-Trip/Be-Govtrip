@@ -28,7 +28,7 @@ class FinanceService
             ? (float) $data['advance_payment']
             : (float) ($travelRequest->advance_payment > 0 ? $travelRequest->advance_payment : $travelRequest->estimated_total_cost);
 
-        $nextStatus = $isValid ? 'Selesai' : 'Revisi Admin Travel';
+        $nextStatus = $isValid ? 'Selesai' : 'Revisi LPJ';
 
         DB::beginTransaction();
         try {
@@ -36,7 +36,7 @@ class FinanceService
             $travelRequest->update([
                 'advance_payment' => $isValid ? $approvedAdvance : $travelRequest->advance_payment,
                 'status' => $nextStatus,
-                'rejection_reason' => $isValid ? null : ($notes ?? 'Perlu perbaikan rincian logistik/administrasi oleh Admin Travel.'),
+                'rejection_reason' => $isValid ? null : ($notes ?? 'Perlu perbaikan berkas bukti pengeluaran LPJ.'),
             ]);
 
             // 3. Sinkronkan ke tabel expense_reports agar PDF Audit Final memiliki rekap yang valid
