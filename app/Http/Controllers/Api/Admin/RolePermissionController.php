@@ -39,12 +39,12 @@ class RolePermissionController extends Controller
 
         $users = User::with('employee.department')->get();
         $roleDistribution = [
-            'Pegawai'       => 0,
-            'Atasan'        => 0,
+            'Pegawai' => 0,
+            'Atasan' => 0,
             'Kepala Bidang' => 0,
-            'Kepala Dinas'  => 0,
-            'Bendahara'     => 0,
-            'Admin'         => 0,
+            'Kepala Dinas' => 0,
+            'Bendahara' => 0,
+            'Admin' => 0,
         ];
 
         foreach ($users as $u) {
@@ -64,27 +64,27 @@ class RolePermissionController extends Controller
             ->get()
             ->map(function ($log) {
                 return [
-                    'id'          => $log->id,
-                    'title'       => $log->action,
+                    'id' => $log->id,
+                    'title' => $log->action,
                     'description' => $log->description,
-                    'actor'       => $log->user->employee->name ?? 'Sistem',
-                    'time_ago'    => $log->created_at ? $log->created_at->diffForHumans() : '-',
+                    'actor' => $log->user->employee->name ?? 'Sistem',
+                    'time_ago' => $log->created_at ? $log->created_at->diffForHumans() : '-',
                 ];
             });
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'summary' => [
-                    'pengguna_aktif'       => $penggunaAktif,
-                    'total_peran'          => 7,
-                    'hak_akses_terpasang'  => $activePermissionsCount,
+                    'pengguna_aktif' => $penggunaAktif,
+                    'total_peran' => 7,
+                    'hak_akses_terpasang' => $activePermissionsCount,
                     'login_gagal_hari_ini' => $loginGagalHariIni,
-                    'status_sistem'        => 'Normal',
-                    'status_deskripsi'     => 'semua layanan aktif',
+                    'status_sistem' => 'Normal',
+                    'status_deskripsi' => 'semua layanan aktif',
                 ],
                 'pengguna_per_peran' => $roleDistribution,
-                'aktivitas_sistem'   => $aktivitasSistem,
+                'aktivitas_sistem' => $aktivitasSistem,
             ],
         ]);
     }
@@ -94,8 +94,8 @@ class RolePermissionController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => [
-                'roles'  => ['Pegawai', 'Atasan', 'Kabid', 'Kadis', 'Bendahara', 'Admin', 'Super Admin'],
+            'data' => [
+                'roles' => ['Pegawai', 'Atasan', 'Kabid', 'Kadis', 'Bendahara', 'Admin', 'Super Admin'],
                 'matrix' => $this->matrixService->getMatrix(),
             ],
         ]);
@@ -112,18 +112,18 @@ class RolePermissionController extends Controller
             $updatedMatrix = $this->matrixService->updateMatrix($validated['matrix']);
 
             AuditLog::create([
-                'user_id'     => $request->user()->id,
-                'action'      => 'ROLE_PERMISSION_UPDATED',
-                'module'      => 'SUPER_ADMIN',
+                'user_id' => $request->user()->id,
+                'action' => 'ROLE_PERMISSION_UPDATED',
+                'module' => 'SUPER_ADMIN',
                 'description' => 'Peran & hak akses diperbarui oleh Super Admin.',
-                'ip_address'  => $request->ip(),
-                'user_agent'  => $request->userAgent(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Perubahan Role & Hak Akses berhasil disimpan.',
-                'data'    => $updatedMatrix,
+                'data' => $updatedMatrix,
             ]);
         } catch (Exception $e) {
             return response()->json([

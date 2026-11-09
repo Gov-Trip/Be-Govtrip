@@ -40,7 +40,7 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $queue,
+            'data' => $queue,
         ]);
     }
 
@@ -73,12 +73,12 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'summary' => [
-                    'perlu_diverifikasi'      => $perluDiverifikasi,
+                    'perlu_diverifikasi' => $perluDiverifikasi,
                     'terverifikasi_bulan_ini' => $terverifikasiBulanIni,
-                    'dikembalikan'            => $dikembalikan,
-                    'total_realisasi'         => $totalRealisasi,
+                    'dikembalikan' => $dikembalikan,
+                    'total_realisasi' => $totalRealisasi,
                 ],
                 'antrean_verifikasi' => $antreanVerifikasi,
             ],
@@ -101,7 +101,7 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $travelRequest,
+            'data' => $travelRequest,
         ]);
     }
 
@@ -136,7 +136,7 @@ class FinanceController extends Controller
                 if ($adminTravelUsers->isNotEmpty()) {
                     Notification::send($adminTravelUsers, new SystemNotification(
                         'Revisi Administrasi Logistik ⚠️',
-                        "Finance mengembalikan berkas {$result->requester->name}. Catatan: " . ($result->rejection_reason ?? '-'),
+                        "Finance mengembalikan berkas {$result->requester->name}. Catatan: ".($result->rejection_reason ?? '-'),
                         'error'
                     ));
                 }
@@ -147,7 +147,7 @@ class FinanceController extends Controller
                 'message' => $result->status === 'Selesai'
                     ? 'Verifikasi berhasil. Dana disetujui dan proses perjalanan dinas selesai.'
                     : 'Berkas dikembalikan ke Admin Travel untuk diperbaiki.',
-                'data'    => $result,
+                'data' => $result,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -169,8 +169,8 @@ class FinanceController extends Controller
                 $id,
                 $request->user(),
                 [
-                    'is_valid'         => false,
-                    'notes'            => $validated['rejection_reason'],
+                    'is_valid' => false,
+                    'notes' => $validated['rejection_reason'],
                     'rejection_reason' => $validated['rejection_reason'],
                 ],
                 $request->ip(),
@@ -180,7 +180,7 @@ class FinanceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Berkas berhasil dikembalikan untuk revisi.',
-                'data'    => $result,
+                'data' => $result,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -220,23 +220,23 @@ class FinanceController extends Controller
             $balance = $advancePayment - $realExpense;
 
             $pdf = Pdf::loadView('pdf.lpj_final', [
-                'travelRequest'  => $travelRequest,
+                'travelRequest' => $travelRequest,
                 'advancePayment' => $advancePayment,
-                'realExpense'    => $realExpense,
-                'balance'        => $balance,
+                'realExpense' => $realExpense,
+                'balance' => $balance,
             ]);
 
             $pdf->setPaper('A4', 'portrait');
 
             $sppd = $travelRequest->sppd_number ?? $travelRequest->id;
-            $fileName = 'LPJ_FINAL_' . str_replace('/', '_', $sppd) . '.pdf';
+            $fileName = 'LPJ_FINAL_'.str_replace('/', '_', $sppd).'.pdf';
 
             return $pdf->stream($fileName);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mencetak dokumen: ' . $e->getMessage(),
+                'message' => 'Gagal mencetak dokumen: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -251,7 +251,7 @@ class FinanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $history,
+            'data' => $history,
         ]);
     }
 }

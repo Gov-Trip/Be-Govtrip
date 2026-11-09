@@ -14,9 +14,9 @@ class FinanceVerifyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'is_valid'         => 'required|boolean',
-            'advance_payment'  => 'nullable|numeric|min:0',
-            'notes'            => 'nullable|string|max:500',
+            'is_valid' => 'required|boolean',
+            'advance_payment' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
             'rejection_reason' => 'nullable|string|max:500',
         ];
     }

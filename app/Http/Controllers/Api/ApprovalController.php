@@ -44,7 +44,7 @@ class ApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $queue,
+            'data' => $queue,
         ]);
     }
 
@@ -62,7 +62,7 @@ class ApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $travelRequest,
+            'data' => $travelRequest,
         ]);
     }
 
@@ -119,14 +119,14 @@ class ApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'summary' => [
-                    'menunggu'            => $menungguCount,
+                    'menunggu' => $menungguCount,
                     'disetujui_bulan_ini' => $disetujuiBulanIniCount,
-                    'dikembalikan'        => $dikembalikanCount,
-                    'sedang_dinas'        => $sedangDinasCount,
+                    'dikembalikan' => $dikembalikanCount,
+                    'sedang_dinas' => $sedangDinasCount,
                 ],
-                'menunggu_list'  => $menungguList,
+                'menunggu_list' => $menungguList,
                 'perjalanan_tim' => $perjalananTimList,
             ],
         ]);
@@ -172,7 +172,7 @@ class ApprovalController extends Controller
                 if ($requesterUser) {
                     $requesterUser->notify(new SystemNotification(
                         "Pengajuan ke {$cityName} {$travelRequest->status}",
-                        'Catatan Atasan: ' . ($travelRequest->rejection_reason ?? '-'),
+                        'Catatan Atasan: '.($travelRequest->rejection_reason ?? '-'),
                         'error'
                     ));
                 }
@@ -181,7 +181,7 @@ class ApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Keputusan persetujuan berhasil diproses.',
-                'data'    => $travelRequest,
+                'data' => $travelRequest,
             ], 200);
 
         } catch (Exception $e) {
@@ -203,12 +203,12 @@ class ApprovalController extends Controller
     {
         $validated = $request->validate([
             'rejection_reason' => 'required|string|min:5|max:500',
-            'decision'         => 'nullable|in:Ditolak,Perlu Revisi,Direvisi',
+            'decision' => 'nullable|in:Ditolak,Perlu Revisi,Direvisi',
         ]);
 
         $payload = [
-            'decision'         => $validated['decision'] ?? 'Direvisi',
-            'notes'            => $validated['rejection_reason'],
+            'decision' => $validated['decision'] ?? 'Direvisi',
+            'notes' => $validated['rejection_reason'],
             'rejection_reason' => $validated['rejection_reason'],
         ];
 
@@ -225,7 +225,7 @@ class ApprovalController extends Controller
             if ($requesterUser) {
                 $requesterUser->notify(new SystemNotification(
                     'Pengajuan Dikembalikan Atasan',
-                    'Catatan: ' . $validated['rejection_reason'],
+                    'Catatan: '.$validated['rejection_reason'],
                     'error'
                 ));
             }
@@ -233,7 +233,7 @@ class ApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pengajuan berhasil dikembalikan untuk direvisi.',
-                'data'    => $travelRequest,
+                'data' => $travelRequest,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -260,7 +260,7 @@ class ApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $history,
+            'data' => $history,
         ]);
     }
 }

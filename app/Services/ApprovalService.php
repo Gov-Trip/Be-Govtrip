@@ -60,35 +60,35 @@ class ApprovalService
         try {
             // 4. Catat Riwayat Persetujuan ke tabel approvals
             Approval::create([
-                'travel_request_id'    => $travelRequest->id,
+                'travel_request_id' => $travelRequest->id,
                 'approver_employee_id' => $approver->id,
-                'status'               => $data['decision'],
-                'notes'                => $notes,
-                'action_at'            => now(),
+                'status' => $data['decision'],
+                'notes' => $notes,
+                'action_at' => now(),
             ]);
 
             // 5. Generate SPPD Digital Otomatis jika Disetujui
             $sppdNumber = $travelRequest->sppd_number;
             if ($nextStatus === 'Disetujui' && ! $sppdNumber) {
-                $sppdNumber = 'SPPD/' . date('Y/m') . '/' . strtoupper(substr($travelRequest->id, 0, 4));
+                $sppdNumber = 'SPPD/'.date('Y/m').'/'.strtoupper(substr($travelRequest->id, 0, 4));
             }
 
             // 6. Update Status & Alasan Penolakan di Tabel Utama
             $travelRequest->update([
-                'status'           => $nextStatus,
-                'sppd_number'      => $sppdNumber,
+                'status' => $nextStatus,
+                'sppd_number' => $sppdNumber,
                 'rejection_reason' => $rejectionReason,
             ]);
 
             // 7. Jejak Audit
             AuditLog::create([
-                'user_id'           => $approverUser->id,
+                'user_id' => $approverUser->id,
                 'travel_request_id' => $travelRequest->id,
-                'action'            => 'APPROVAL_' . strtoupper(str_replace(' ', '_', $data['decision'])),
-                'module'            => 'APPROVAL',
-                'description'       => "Diproses oleh {$approver->name} ({$approver->position}). Keputusan: {$data['decision']}. Status menjadi: {$nextStatus}",
-                'ip_address'        => $ip,
-                'user_agent'        => $userAgent,
+                'action' => 'APPROVAL_'.strtoupper(str_replace(' ', '_', $data['decision'])),
+                'module' => 'APPROVAL',
+                'description' => "Diproses oleh {$approver->name} ({$approver->position}). Keputusan: {$data['decision']}. Status menjadi: {$nextStatus}",
+                'ip_address' => $ip,
+                'user_agent' => $userAgent,
             ]);
 
             DB::commit();

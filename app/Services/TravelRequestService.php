@@ -31,13 +31,13 @@ class TravelRequestService
         try {
             $travelRequest = TravelRequest::create([
                 'requester_employee_id' => $employee->id,
-                'origin_city_id'        => $data['origin_city_id'],
-                'destination_city_id'   => $data['destination_city_id'],
-                'start_date'            => $data['start_date'],
-                'end_date'              => $data['end_date'],
-                'purpose'               => $data['purpose'],
-                'estimated_total_cost'  => $estimatedCost,
-                'status'                => 'Draft',
+                'origin_city_id' => $data['origin_city_id'],
+                'destination_city_id' => $data['destination_city_id'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+                'purpose' => $data['purpose'],
+                'estimated_total_cost' => $estimatedCost,
+                'status' => 'Draft',
             ]);
 
             $assignees = $data['assignee_ids'] ?? [];
@@ -48,19 +48,19 @@ class TravelRequestService
             foreach ($assignees as $assigneeId) {
                 TravelAssignee::create([
                     'travel_request_id' => $travelRequest->id,
-                    'employee_id'       => $assigneeId,
-                    'is_leader'         => $assigneeId === $employee->id,
+                    'employee_id' => $assigneeId,
+                    'is_leader' => $assigneeId === $employee->id,
                 ]);
             }
 
             AuditLog::create([
                 'travel_request_id' => $travelRequest->id,
-                'user_id'           => $user->id,
-                'action'            => 'CREATE_DRAFT',
-                'module'            => 'TRAVEL_REQUEST',
-                'description'       => 'Draft pengajuan dibuat.',
-                'ip_address'        => $ipAddress,
-                'user_agent'        => $userAgent,
+                'user_id' => $user->id,
+                'action' => 'CREATE_DRAFT',
+                'module' => 'TRAVEL_REQUEST',
+                'description' => 'Draft pengajuan dibuat.',
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
             ]);
 
             DB::commit();
@@ -99,12 +99,12 @@ class TravelRequestService
         DB::beginTransaction();
         try {
             $travelRequest->update([
-                'origin_city_id'      => $data['origin_city_id'] ?? $travelRequest->origin_city_id,
+                'origin_city_id' => $data['origin_city_id'] ?? $travelRequest->origin_city_id,
                 'destination_city_id' => $destCityId,
-                'start_date'          => $startDate,
-                'end_date'            => $endDate,
-                'purpose'             => $data['purpose'] ?? $travelRequest->purpose,
-                'estimated_total_cost'=> $estimatedCost,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'purpose' => $data['purpose'] ?? $travelRequest->purpose,
+                'estimated_total_cost' => $estimatedCost,
             ]);
 
             if (isset($data['assignee_ids'])) {
@@ -116,20 +116,20 @@ class TravelRequestService
                 foreach ($assignees as $assigneeId) {
                     TravelAssignee::create([
                         'travel_request_id' => $travelRequest->id,
-                        'employee_id'       => $assigneeId,
-                        'is_leader'         => $assigneeId === $employee->id,
+                        'employee_id' => $assigneeId,
+                        'is_leader' => $assigneeId === $employee->id,
                     ]);
                 }
             }
 
             AuditLog::create([
                 'travel_request_id' => $travelRequest->id,
-                'user_id'           => $user->id,
-                'action'            => 'UPDATE_REQUEST',
-                'module'            => 'TRAVEL_REQUEST',
-                'description'       => 'Data pengajuan diperbarui oleh karyawan.',
-                'ip_address'        => $ipAddress,
-                'user_agent'        => $userAgent,
+                'user_id' => $user->id,
+                'action' => 'UPDATE_REQUEST',
+                'module' => 'TRAVEL_REQUEST',
+                'description' => 'Data pengajuan diperbarui oleh karyawan.',
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
             ]);
 
             DB::commit();
@@ -155,18 +155,18 @@ class TravelRequestService
         DB::beginTransaction();
         try {
             $travelRequest->update([
-                'status'           => 'Menunggu Persetujuan Atasan',
+                'status' => 'Menunggu Persetujuan Atasan',
                 'rejection_reason' => null,
             ]);
 
             AuditLog::create([
                 'travel_request_id' => $travelRequest->id,
-                'user_id'           => $user->id,
-                'action'            => 'SUBMIT_REQUEST',
-                'module'            => 'TRAVEL_REQUEST',
-                'description'       => 'Pengajuan dikirim ke Atasan Langsung.',
-                'ip_address'        => $ipAddress,
-                'user_agent'        => $userAgent,
+                'user_id' => $user->id,
+                'action' => 'SUBMIT_REQUEST',
+                'module' => 'TRAVEL_REQUEST',
+                'description' => 'Pengajuan dikirim ke Atasan Langsung.',
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
             ]);
 
             DB::commit();

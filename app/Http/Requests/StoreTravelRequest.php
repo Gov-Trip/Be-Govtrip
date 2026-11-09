@@ -14,13 +14,13 @@ class StoreTravelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'origin_city_id'      => 'required|exists:ref_cities,id',
+            'origin_city_id' => 'required|exists:ref_cities,id',
             'destination_city_id' => 'required|exists:ref_cities,id',
-            'start_date'          => 'required|date|after_or_equal:today',
-            'end_date'            => 'required|date|after_or_equal:start_date',
-            'purpose'             => 'required|string|max:500',
-            'assignee_ids'        => 'nullable|array',
-            'assignee_ids.*'      => 'exists:employees,id',
+            'start_date' => 'required|date|after_or_equal:today',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'purpose' => 'required|string|max:500',
+            'assignee_ids' => 'nullable|array',
+            'assignee_ids.*' => 'exists:employees,id',
         ];
     }
 

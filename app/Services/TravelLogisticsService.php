@@ -42,30 +42,30 @@ class TravelLogisticsService
             $grandTotal += $subtotal;
 
             $breakdown[] = [
-                'employee_id'        => $emp->id,
-                'name'               => $emp->name,
-                'grade'              => $emp->grade,
-                'is_leader'          => (bool) $assignee->is_leader,
-                'days'               => $days,
-                'nights'             => $nights,
-                'sbm_daily_total'    => $dailyAllowance,
-                'sbm_hotel_total'    => $hotelRate,
+                'employee_id' => $emp->id,
+                'name' => $emp->name,
+                'grade' => $emp->grade,
+                'is_leader' => (bool) $assignee->is_leader,
+                'days' => $days,
+                'nights' => $nights,
+                'sbm_daily_total' => $dailyAllowance,
+                'sbm_hotel_total' => $hotelRate,
                 'sbm_transport_rate' => $transportRate,
                 'subtotal_standardized' => $subtotal,
             ];
         }
 
         return [
-            'days'               => $days,
-            'nights'             => $nights,
-            'assignee_count'     => count($breakdown),
+            'days' => $days,
+            'nights' => $nights,
+            'assignee_count' => count($breakdown),
             'standardized_total' => $grandTotal,
-            'breakdown'          => $breakdown,
+            'breakdown' => $breakdown,
         ];
     }
 
     // 1. Input Logistik & Kunci Anggaran Standar SBM
-public function inputLogistics($travelRequestId, $adminUser, array $data, $ipAddress, $userAgent): TravelRequest
+    public function inputLogistics($travelRequestId, $adminUser, array $data, $ipAddress, $userAgent): TravelRequest
     {
         $travelRequest = TravelRequest::with(['assignees.employee', 'requester'])->findOrFail($travelRequestId);
 
@@ -75,7 +75,7 @@ public function inputLogistics($travelRequestId, $adminUser, array $data, $ipAdd
 
         // Hitung anggaran terstandarisasi otomatis dari Master SBM
         $budgetData = $this->calculateStandardizedBudget($travelRequest);
-        
+
         // Evaluasi finalCost: Pakai inputan manual Admin Travel JIKA ADA, jika tidak pakai hitungan SBM
         if (isset($data['estimated_total_cost']) && $data['estimated_total_cost'] > 0) {
             $finalCost = (float) $data['estimated_total_cost'];
@@ -91,40 +91,40 @@ public function inputLogistics($travelRequestId, $adminUser, array $data, $ipAdd
             TravelLogistics::updateOrCreate(
                 ['travel_request_id' => $travelRequest->id],
                 [
-                    'admin_travel_id'        => $adminUser->employee->id,
-                    'transport_type'         => $data['transport_type'],
+                    'admin_travel_id' => $adminUser->employee->id,
+                    'transport_type' => $data['transport_type'],
                     'booking_code_or_ticket' => $data['booking_code_or_ticket'],
-                    'hotel_name'             => $data['hotel_name'] ?? null,
-                    'departure_datetime'     => $data['departure_datetime'],
-                    'return_datetime'        => $data['return_datetime'],
+                    'hotel_name' => $data['hotel_name'] ?? null,
+                    'departure_datetime' => $data['departure_datetime'],
+                    'return_datetime' => $data['return_datetime'],
                 ]
             );
 
             // Pastikan nomor SPPD sudah ada (fallback)
             $sppdNumber = $travelRequest->sppd_number;
             if (! $sppdNumber) {
-                $sppdNumber = '090/SPPD-' . strtoupper(substr($travelRequest->id, 0, 4)) . '/' . now()->format('m/Y');
+                $sppdNumber = '090/SPPD-'.strtoupper(substr($travelRequest->id, 0, 4)).'/'.now()->format('m/Y');
             }
 
             // 2. Kunci budget final ke advance_payment & ubah status ke Siap Berangkat
             $travelRequest->update([
-                'sppd_number'          => $sppdNumber,
+                'sppd_number' => $sppdNumber,
                 'estimated_total_cost' => $finalCost,
-                'advance_payment'      => $finalCost,
-                'status'               => 'Siap Berangkat',
-                'rejection_reason'     => null,
+                'advance_payment' => $finalCost,
+                'status' => 'Siap Berangkat',
+                'rejection_reason' => null,
             ]);
 
             // 3. Jejak Audit
             $formattedBudget = number_format($finalCost, 0, ',', '.');
             AuditLog::create([
                 'travel_request_id' => $travelRequest->id,
-                'user_id'           => $adminUser->id,
-                'action'            => 'INPUT_LOGISTICS',
-                'module'            => 'ADMIN_TRAVEL',
-                'description'       => "Logistik {$data['transport_type']} (Kode: {$data['booking_code_or_ticket']}) diinput. Anggaran dikunci: Rp {$formattedBudget}.",
-                'ip_address'        => $ipAddress,
-                'user_agent'        => $userAgent,
+                'user_id' => $adminUser->id,
+                'action' => 'INPUT_LOGISTICS',
+                'module' => 'ADMIN_TRAVEL',
+                'description' => "Logistik {$data['transport_type']} (Kode: {$data['booking_code_or_ticket']}) diinput. Anggaran dikunci: Rp {$formattedBudget}.",
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
             ]);
 
             DB::commit();
@@ -148,18 +148,18 @@ public function inputLogistics($travelRequestId, $adminUser, array $data, $ipAdd
         DB::beginTransaction();
         try {
             $travelRequest->update([
-                'status'           => 'Direvisi',
+                'status' => 'Direvisi',
                 'rejection_reason' => $reason,
             ]);
 
             AuditLog::create([
                 'travel_request_id' => $travelRequest->id,
-                'user_id'           => $adminUser->id,
-                'action'            => 'LOGISTICS_REJECTED',
-                'module'            => 'ADMIN_TRAVEL',
-                'description'       => "Admin Travel mengembalikan pengajuan. Alasan: {$reason}",
-                'ip_address'        => $ipAddress,
-                'user_agent'        => $userAgent,
+                'user_id' => $adminUser->id,
+                'action' => 'LOGISTICS_REJECTED',
+                'module' => 'ADMIN_TRAVEL',
+                'description' => "Admin Travel mengembalikan pengajuan. Alasan: {$reason}",
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
             ]);
 
             DB::commit();

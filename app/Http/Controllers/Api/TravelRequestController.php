@@ -47,12 +47,12 @@ class TravelRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'summary' => [
                     'total_pengajuan' => $totalPengajuan,
-                    'dalam_proses'    => $dalamProses,
-                    'perlu_revisi'    => $perluRevisi,
-                    'selesai'         => $selesai,
+                    'dalam_proses' => $dalamProses,
+                    'perlu_revisi' => $perluRevisi,
+                    'selesai' => $selesai,
                 ],
                 'recent_requests' => $recentRequests,
             ],
@@ -69,8 +69,8 @@ class TravelRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'cities'    => $cities,
+            'data' => [
+                'cities' => $cities,
                 'employees' => $employees,
             ],
         ]);
@@ -93,7 +93,7 @@ class TravelRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $myRequests,
+            'data' => $myRequests,
         ]);
     }
 
@@ -111,7 +111,7 @@ class TravelRequestController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Draft pengajuan perjalanan dinas berhasil dibuat.',
-                'data'    => $travelRequest->load(['originCity', 'destinationCity', 'assignees.employee']),
+                'data' => $travelRequest->load(['originCity', 'destinationCity', 'assignees.employee']),
             ], 201);
 
         } catch (Exception $e) {
@@ -137,7 +137,7 @@ class TravelRequestController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data pengajuan berhasil diperbarui.',
-                'data'    => $travelRequest->load(['originCity', 'destinationCity', 'assignees.employee']),
+                'data' => $travelRequest->load(['originCity', 'destinationCity', 'assignees.employee']),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -167,7 +167,7 @@ class TravelRequestController extends Controller
                     if ($atasanUser) {
                         $atasanUser->notify(new SystemNotification(
                             "Pengajuan Baru dari {$employee->name}",
-                            'Tujuan: ' . ($travelRequest->destinationCity->city_name ?? '-'),
+                            'Tujuan: '.($travelRequest->destinationCity->city_name ?? '-'),
                             'warning'
                         ));
                     }
@@ -177,7 +177,7 @@ class TravelRequestController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pengajuan berhasil dikirim ke Atasan.',
-                'data'    => $travelRequest,
+                'data' => $travelRequest,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -209,7 +209,7 @@ class TravelRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $travelRequest,
+            'data' => $travelRequest,
         ]);
     }
 
@@ -236,29 +236,29 @@ class TravelRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'can_download_sppd' => ! empty($travelRequest->sppd_number),
-                'can_download_lpj'  => $travelRequest->status === 'Selesai',
-                'document_summary'  => [
-                    'sppd_number'          => $travelRequest->sppd_number ?? 'Belum Terbit',
-                    'status'               => $travelRequest->status,
-                    'requester_name'       => $travelRequest->requester->name ?? '-',
-                    'requester_nip'        => $travelRequest->requester->nip ?? '-',
-                    'department'           => $travelRequest->requester->department->name ?? '-',
-                    'origin_city'          => $travelRequest->originCity->city_name ?? '-',
-                    'destination_city'     => $travelRequest->destinationCity->city_name ?? '-',
-                    'start_date'           => $travelRequest->start_date,
-                    'end_date'             => $travelRequest->end_date,
-                    'purpose'              => $travelRequest->purpose,
+                'can_download_lpj' => $travelRequest->status === 'Selesai',
+                'document_summary' => [
+                    'sppd_number' => $travelRequest->sppd_number ?? 'Belum Terbit',
+                    'status' => $travelRequest->status,
+                    'requester_name' => $travelRequest->requester->name ?? '-',
+                    'requester_nip' => $travelRequest->requester->nip ?? '-',
+                    'department' => $travelRequest->requester->department->name ?? '-',
+                    'origin_city' => $travelRequest->originCity->city_name ?? '-',
+                    'destination_city' => $travelRequest->destinationCity->city_name ?? '-',
+                    'start_date' => $travelRequest->start_date,
+                    'end_date' => $travelRequest->end_date,
+                    'purpose' => $travelRequest->purpose,
                     'estimated_total_cost' => (float) $travelRequest->estimated_total_cost,
-                    'advance_payment'      => $advancePayment,
-                    'real_expense'         => $realExpense,
-                    'balance'              => $balance,
+                    'advance_payment' => $advancePayment,
+                    'real_expense' => $realExpense,
+                    'balance' => $balance,
                 ],
-                'assignees'         => $travelRequest->assignees,
-                'logistics'         => $travelRequest->logistics,
-                'approvals'         => $travelRequest->approvals,
-                'expense_report'    => $travelRequest->expenseReport,
+                'assignees' => $travelRequest->assignees,
+                'logistics' => $travelRequest->logistics,
+                'approvals' => $travelRequest->approvals,
+                'expense_report' => $travelRequest->expenseReport,
             ],
         ]);
     }
@@ -297,14 +297,14 @@ class TravelRequestController extends Controller
             ]);
 
             $pdf->setPaper('A4', 'portrait');
-            $fileName = 'SPPD_' . str_replace('/', '_', $travelRequest->sppd_number) . '.pdf';
+            $fileName = 'SPPD_'.str_replace('/', '_', $travelRequest->sppd_number).'.pdf';
 
             return $pdf->stream($fileName);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengunduh SPPD: ' . $e->getMessage(),
+                'message' => 'Gagal mengunduh SPPD: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -346,22 +346,22 @@ class TravelRequestController extends Controller
             $balance = $advancePayment - $realExpense;
 
             $pdf = Pdf::loadView('pdf.lpj_final', [
-                'travelRequest'  => $travelRequest,
+                'travelRequest' => $travelRequest,
                 'advancePayment' => $advancePayment,
-                'realExpense'    => $realExpense,
-                'balance'        => $balance,
+                'realExpense' => $realExpense,
+                'balance' => $balance,
             ]);
 
             $pdf->setPaper('A4', 'portrait');
             $sppdNumber = $travelRequest->sppd_number ?? $travelRequest->id;
-            $fileName = 'LPJ_FINAL_' . str_replace('/', '_', $sppdNumber) . '.pdf';
+            $fileName = 'LPJ_FINAL_'.str_replace('/', '_', $sppdNumber).'.pdf';
 
             return $pdf->stream($fileName);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengunduh LPJ Final: ' . $e->getMessage(),
+                'message' => 'Gagal mengunduh LPJ Final: '.$e->getMessage(),
             ], 500);
         }
     }

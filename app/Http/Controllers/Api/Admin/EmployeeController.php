@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Employee;
 use App\Models\User;
-use App\Models\AuditLog;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -138,21 +138,21 @@ class EmployeeController extends Controller
             $statusLabel = $employee->user->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
             AuditLog::create([
-                'user_id'     => $request->user()->id,
-                'action'      => 'TOGGLE_USER_STATUS',
-                'module'      => 'SUPER_ADMIN',
+                'user_id' => $request->user()->id,
+                'action' => 'TOGGLE_USER_STATUS',
+                'module' => 'SUPER_ADMIN',
                 'description' => "Akun {$employee->name} berhasil {$statusLabel}.",
-                'ip_address'  => $request->ip(),
-                'user_agent'  => $request->userAgent(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "Status akun {$employee->name} berhasil {$statusLabel}.",
-                'data'    => [
+                'data' => [
                     'employee_id' => $employee->id,
-                    'user_id'     => $employee->user->id,
-                    'is_active'   => (bool) $employee->user->is_active,
+                    'user_id' => $employee->user->id,
+                    'is_active' => (bool) $employee->user->is_active,
                 ],
             ]);
         } catch (Exception $e) {
@@ -162,5 +162,4 @@ class EmployeeController extends Controller
             ], 400);
         }
     }
-    
 }

@@ -34,8 +34,8 @@ class FinanceService
         try {
             // 2. Update Dana Cair (Advance Payment), Status Utama, & Alasan Revisi
             $travelRequest->update([
-                'advance_payment'  => $isValid ? $approvedAdvance : $travelRequest->advance_payment,
-                'status'           => $nextStatus,
+                'advance_payment' => $isValid ? $approvedAdvance : $travelRequest->advance_payment,
+                'status' => $nextStatus,
                 'rejection_reason' => $isValid ? null : ($notes ?? 'Perlu perbaikan rincian logistik/administrasi oleh Admin Travel.'),
             ]);
 
@@ -43,28 +43,28 @@ class FinanceService
             ExpenseReport::updateOrCreate(
                 ['travel_request_id' => $travelRequest->id],
                 [
-                    'employee_id'        => $travelRequest->requester_employee_id,
-                    'total_advance'      => $isValid ? $approvedAdvance : 0,
+                    'employee_id' => $travelRequest->requester_employee_id,
+                    'total_advance' => $isValid ? $approvedAdvance : 0,
                     'total_real_expense' => $travelRequest->expenseReport->total_real_expense ?? ($isValid ? $approvedAdvance : 0),
-                    'balance_amount'     => $travelRequest->expenseReport->balance_amount ?? 0,
-                    'activity_summary'   => $travelRequest->expenseReport->activity_summary ?? $travelRequest->purpose,
-                    'status'             => $isValid ? 'VERIFIED' : 'REJECTED',
-                    'finance_notes'      => $notes,
+                    'balance_amount' => $travelRequest->expenseReport->balance_amount ?? 0,
+                    'activity_summary' => $travelRequest->expenseReport->activity_summary ?? $travelRequest->purpose,
+                    'status' => $isValid ? 'VERIFIED' : 'REJECTED',
+                    'finance_notes' => $notes,
                 ]
             );
 
             // 4. Catat Jejak Audit Pencairan / Penolakan
             $formattedAmount = number_format($approvedAdvance, 0, ',', '.');
             AuditLog::create([
-                'user_id'           => $financeUser->id,
+                'user_id' => $financeUser->id,
                 'travel_request_id' => $travelRequest->id,
-                'action'            => $isValid ? 'FINANCE_APPROVAL' : 'FINANCE_REJECTED',
-                'module'            => 'FINANCE',
-                'description'       => $isValid
-                    ? "Verifikasi Finance disetujui. Pencairan Dana: Rp {$formattedAmount}. Status: {$nextStatus}. Catatan: " . ($notes ?? '-')
-                    : "Dikembalikan oleh Finance ke Admin Travel. Alasan: " . ($notes ?? '-'),
-                'ip_address'        => $ipAddress,
-                'user_agent'        => $userAgent,
+                'action' => $isValid ? 'FINANCE_APPROVAL' : 'FINANCE_REJECTED',
+                'module' => 'FINANCE',
+                'description' => $isValid
+                    ? "Verifikasi Finance disetujui. Pencairan Dana: Rp {$formattedAmount}. Status: {$nextStatus}. Catatan: ".($notes ?? '-')
+                    : 'Dikembalikan oleh Finance ke Admin Travel. Alasan: '.($notes ?? '-'),
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
             ]);
 
             DB::commit();

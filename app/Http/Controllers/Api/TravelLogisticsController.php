@@ -38,9 +38,9 @@ class TravelLogisticsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'cities'          => $cities,
-                'sbm_policies'    => $policies,
+            'data' => [
+                'cities' => $cities,
+                'sbm_policies' => $policies,
                 'transport_types' => $transportTypes,
             ],
         ]);
@@ -58,7 +58,7 @@ class TravelLogisticsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $queue,
+            'data' => $queue,
         ]);
     }
 
@@ -95,15 +95,15 @@ class TravelLogisticsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'summary' => [
-                    'total_pegawai'         => $totalPegawai,
-                    'perjalanan_berjalan'   => $perjalananBerjalanCount,
+                    'total_pegawai' => $totalPegawai,
+                    'perjalanan_berjalan' => $perjalananBerjalanCount,
                     'sppd_terbit_bulan_ini' => $sppdTerbitCount,
                     'dokumen_belum_lengkap' => $dokumenBelumLengkapCount,
                 ],
                 'perjalanan_berjalan_list' => $perjalananBerjalanList,
-                'tindak_lanjut_list'       => $tindakLanjutList,
+                'tindak_lanjut_list' => $tindakLanjutList,
             ],
         ]);
     }
@@ -125,8 +125,8 @@ class TravelLogisticsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'travel_request'      => $travelRequest,
+            'data' => [
+                'travel_request' => $travelRequest,
                 'standardized_budget' => $standardizedBudget,
             ],
         ]);
@@ -170,7 +170,7 @@ class TravelLogisticsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data logistik dan anggaran terstandarisasi berhasil disimpan untuk diverifikasi Finance.',
-                'data'    => $result,
+                'data' => $result,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -200,7 +200,7 @@ class TravelLogisticsController extends Controller
             if ($requesterUser) {
                 $requesterUser->notify(new SystemNotification(
                     'Kendala Pengadaan Logistik',
-                    'Catatan Admin Travel: ' . $validated['rejection_reason'],
+                    'Catatan Admin Travel: '.$validated['rejection_reason'],
                     'error'
                 ));
             }
@@ -208,7 +208,7 @@ class TravelLogisticsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pengajuan dikembalikan ke karyawan beserta catatan logistik.',
-                'data'    => $result,
+                'data' => $result,
             ]);
         } catch (Exception $e) {
             return response()->json([
