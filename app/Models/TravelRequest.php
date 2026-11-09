@@ -78,7 +78,14 @@ class TravelRequest extends Model
 
     public function attachments()
     {
-        return $this->hasMany(TravelAttachment::class);
+        return $this->hasManyThrough(
+            TravelAttachment::class,
+            ExpenseReport::class,
+            'travel_request_id', // Foreign key di tabel expense_reports
+            'expense_report_id', // Foreign key di tabel travel_attachments
+            'id',                // Local key di tabel travel_requests
+            'id'                 // Local key di tabel expense_reports
+        );
     }
 
     public function auditLogs()

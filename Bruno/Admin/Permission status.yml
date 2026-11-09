@@ -1,0 +1,21 @@
+info:
+  name: Permission status
+  type: http
+  seq: 10
+
+http:
+  method: PATCH
+  url: http://localhost:8000/api/super-admin/employees/{{id}}/toggle-status
+  auth: inherit
+
+runtime:
+  variables:
+    - name: id
+      value: "5"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

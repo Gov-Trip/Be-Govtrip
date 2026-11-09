@@ -1,0 +1,16 @@
+info:
+  name: List Employee
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: http://localhost:8000/api/super-admin/employees
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

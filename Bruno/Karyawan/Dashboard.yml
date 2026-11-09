@@ -1,0 +1,18 @@
+info:
+  name: Dashboard
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: http://localhost:8000/api/travel-requests/dashboard
+  auth:
+    type: bearer
+    token: 7|vSI0Cuu4zE50qjhvVl186pTOfHbped0nRPcJwmGT35b46158
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

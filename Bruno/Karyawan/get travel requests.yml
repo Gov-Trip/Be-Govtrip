@@ -6,7 +6,9 @@ info:
 http:
   method: GET
   url: http://localhost:8000/api/travel-requests
-  auth: inherit
+  auth:
+    type: bearer
+    token: 4|wKLLX4LdrWw6xipba0k0SvpXD00hE7hLClOdLEwRa5771dc1
 
 settings:
   encodeUrl: true

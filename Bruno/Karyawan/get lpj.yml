@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:8000/api/travel-requests/{{id}}/download-lpj
+  url: http://localhost:8000/api/travel-requests/{{travel_id}}/lpj-final
   auth: inherit
 
 settings:

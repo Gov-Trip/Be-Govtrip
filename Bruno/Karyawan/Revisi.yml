@@ -1,0 +1,26 @@
+info:
+  name: Revisi
+  type: http
+  seq: 11
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/travel-requests/{{travel_id}}
+  body:
+    type: json
+    data: |-
+      {
+        "origin_city_id": 1,
+        "destination_city_id": 3,
+        "start_date": "2026-11-05",
+        "end_date": "2026-11-07",
+        "purpose": "Pengujian Integrasi End-to-End Gov.Trip (Agenda Hari Ke-2 Sudah Diperjelas)"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

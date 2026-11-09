@@ -1,0 +1,27 @@
+info:
+  name: make policies
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: http://localhost:8000/api/super-admin/policies
+  body:
+    type: json
+    data: |-
+      {
+        "destination_city_id": 1,
+        "grade_group": "Manager",
+        "daily_allowance": 750000,
+        "max_hotel_rate": 1500000,
+        "max_transport_rate": 1000000,
+        "effective_year": 2026
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

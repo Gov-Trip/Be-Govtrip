@@ -15,8 +15,9 @@ class ApprovalDecisionRequest extends FormRequest
     {
         return [
             // Sesuai 3 cabang keputusan HRD
-            'decision' => 'required|in:Disetujui,Ditolak,Perlu Revisi',
-            'notes' => 'nullable|string',
+            'decision' => 'required|in:Disetujui,Ditolak,Perlu Revisi,Direvisi',
+            'notes' => 'nullable|string|max:500',
+            'rejection_reason' => 'nullable|string|mas:500',
         ];
     }
 }

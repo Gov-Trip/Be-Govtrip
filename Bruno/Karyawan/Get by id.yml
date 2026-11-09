@@ -6,7 +6,9 @@ info:
 http:
   method: GET
   url: http://localhost:8000/api/travel-requests/{{id}}
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{acccess_token}}"
 
 runtime:
   variables:

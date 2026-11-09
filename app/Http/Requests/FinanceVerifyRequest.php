@@ -8,22 +8,23 @@ class FinanceVerifyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Jangan lupa ini true!
+        return true;
     }
 
     public function rules(): array
     {
         return [
-            'is_valid' => 'required|boolean', // Wajib boolean (true/false)
-            'advance_payment' => 'required|numeric|min:0',
-            'notes' => 'nullable|string',
+            'is_valid'         => 'required|boolean',
+            'advance_payment'  => 'nullable|numeric|min:0',
+            'notes'            => 'nullable|string|max:500',
+            'rejection_reason' => 'nullable|string|max:500',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'finance_notes.required_if' => 'Catatan revisi wajib diisi jika laporan SPJ tidak valid atau perlu diperbaiki.',
+            'is_valid.required' => 'Keputusan verifikasi (valid / tidak valid) wajib dipilih.',
         ];
     }
 }

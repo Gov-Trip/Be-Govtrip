@@ -5,211 +5,216 @@
     <title>SPPD - {{ $travelRequest->sppd_number ?? $travelRequest->id }}</title>
     <style>
         body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
-            line-height: 1.3;
-            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #1f2937;
+            line-height: 1.5;
             margin: 20px;
         }
         .header {
             text-align: center;
-            border-bottom: 2px solid #000;
+            border-bottom: 3px double #111827;
             padding-bottom: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         .header h2 {
             margin: 0;
-            font-size: 14pt;
+            font-size: 16px;
             text-transform: uppercase;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-        .header h3 {
-            margin: 3px 0;
-            font-size: 12pt;
-            text-transform: uppercase;
-            font-weight: bold;
+            letter-spacing: 1px;
         }
         .header p {
-            margin: 2px 0 0 0;
-            font-size: 9pt;
-            font-style: italic;
+            margin: 4px 0 0;
+            font-size: 11px;
+            color: #4b5563;
         }
         .doc-title {
             text-align: center;
-            margin: 15px 0;
+            margin-bottom: 20px;
         }
         .doc-title h3 {
             margin: 0;
+            font-size: 14px;
             text-decoration: underline;
-            font-size: 13pt;
+            text-transform: uppercase;
+        }
+        .doc-title span {
+            font-size: 12px;
             font-weight: bold;
         }
-        .doc-title p {
-            margin: 4px 0 0 0;
-            font-size: 11pt;
-        }
-        table.sppd-table {
+        table.info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-bottom: 20px;
         }
-        table.sppd-table th, table.sppd-table td {
-            border: 1px solid #000;
-            padding: 6px 8px;
+        table.info-table th,
+        table.info-table td {
+            border: 1px solid #374151;
+            padding: 8px 10px;
             vertical-align: top;
-            font-size: 10.5pt;
+            text-align: left;
         }
-        table.sppd-table td.num {
-            width: 5%;
+        table.info-table td.no {
+            width: 30px;
             text-align: center;
         }
-        table.sppd-table td.col-label {
-            width: 42%;
+        table.info-table td.label {
+            width: 35%;
+            font-weight: bold;
+            background-color: #f9fafb;
         }
-        table.sppd-table td.col-value {
-            width: 53%;
+        .section-title {
+            font-weight: bold;
+            margin: 15px 0 8px;
+            font-size: 13px;
         }
-        .signature-table {
+        table.grid-table {
             width: 100%;
-            margin-top: 25px;
-            page-break-inside: avoid;
+            border-collapse: collapse;
+            margin-bottom: 20px;
         }
-        .signature-table td {
-            vertical-align: top;
-            font-size: 10.5pt;
+        table.grid-table th {
+            background-color: #1e3a8a;
+            color: #ffffff;
+            border: 1px solid #374151;
+            padding: 7px;
+            font-size: 11px;
+            text-align: left;
+        }
+        table.grid-table td {
+            border: 1px solid #374151;
+            padding: 7px;
+            font-size: 11px;
+        }
+        .signature-box {
+            width: 100%;
+            margin-top: 35px;
+        }
+        .signature-col {
+            width: 45%;
+            float: right;
+            text-align: center;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>PEMERINTAH REPUBLIK INDONESIA</h2>
-        <h3>SISTEM PERJALANAN DINAS GOV.TRIP</h3>
-        <p>Jalan Medan Merdeka Barat No. 8, Jakarta Pusat · Portal Resmi SPPD Digital</p>
+        <h2>SISTEM INFORMASI PERJALANAN DINAS (GOV.TRIP)</h2>
+        <p>Dokumen Resmi Surat Perintah Perjalanan Dinas Elektronik (e-SPPD)</p>
     </div>
 
     <div class="doc-title">
         <h3>SURAT PERINTAH PERJALANAN DINAS (SPPD)</h3>
-        <p>Nomor: <strong>{{ $travelRequest->sppd_number ?? '090/SPPD/'.date('Y') }}</strong></p>
+        <span>Nomor: {{ $travelRequest->sppd_number ?? 'BELUM DITERBITKAN' }}</span>
     </div>
 
-    <table class="sppd-table">
+    <table class="info-table">
         <tr>
-            <td class="num">1.</td>
-            <td class="col-label">Pejabat Pembuat Komitmen / Yang Memberi Perintah</td>
-            <td class="col-value">Kepala Badan Kepegawaian & Perencanaan Daerah</td>
-        </tr>
-        <tr>
-            <td class="num">2.</td>
-            <td class="col-label">Nama / NIP Pegawai yang diperintahkan</td>
-            <td class="col-value">
+            <td class="no">1.</td>
+            <td class="label">Pegawai yang Diperintahkan (Ketua)</td>
+            <td>
                 <strong>{{ $travelRequest->requester->name ?? '-' }}</strong><br>
-                NIP. {{ $travelRequest->requester->nip ?? '-' }}
+                NIP: {{ $travelRequest->requester->nip ?? '-' }}
             </td>
         </tr>
         <tr>
-            <td class="num">3.</td>
-            <td class="col-label">
-                a. Pangkat dan Golongan<br>
-                b. Jabatan / Instansi<br>
-                c. Tingkat Biaya Perjalanan Dinas
-            </td>
-            <td class="col-value">
-                a. {{ $travelRequest->requester->grade ?? 'Penata Muda / III-a' }}<br>
-                b. {{ $travelRequest->requester->position ?? '-' }} / {{ $travelRequest->requester->department->name ?? '-' }}<br>
-                c. Standar Biaya Masukan (SBM)
+            <td class="no">2.</td>
+            <td class="label">Jabatan / Unit Kerja / Grade</td>
+            <td>
+                {{ $travelRequest->requester->position ?? '-' }} /
+                {{ $travelRequest->requester->department->name ?? '-' }}
+                ({{ $travelRequest->requester->grade ?? '-' }})
             </td>
         </tr>
         <tr>
-            <td class="num">4.</td>
-            <td class="col-label">Maksud Perjalanan Dinas</td>
-            <td class="col-value">{{ $travelRequest->purpose ?? '-' }}</td>
+            <td class="no">3.</td>
+            <td class="label">Maksud Perjalanan Dinas</td>
+            <td>{{ $travelRequest->purpose ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="num">5.</td>
-            <td class="col-label">Alat Angkut yang dipergunakan</td>
-            <td class="col-value">{{ $travelRequest->logistics->transport_type ?? 'Kereta Api / Pesawat Udara / Transportasi Dinas' }}</td>
-        </tr>
-        <tr>
-            <td class="num">6.</td>
-            <td class="col-label">
-                a. Tempat Berangkat<br>
-                b. Tempat Tujuan
-            </td>
-            <td class="col-value">
-                a. {{ $travelRequest->originCity->city_name ?? 'Jakarta Pusat' }}<br>
-                b. {{ $travelRequest->destinationCity->city_name ?? '-' }}
+            <td class="no">4.</td>
+            <td class="label">Kota Asal &amp; Kota Tujuan</td>
+            <td>
+                <strong>Asal:</strong> {{ $travelRequest->originCity->city_name ?? '-' }} ({{ $travelRequest->originCity->province_name ?? '-' }})<br>
+                <strong>Tujuan:</strong> {{ $travelRequest->destinationCity->city_name ?? '-' }} ({{ $travelRequest->destinationCity->province_name ?? '-' }})
             </td>
         </tr>
         <tr>
-            <td class="num">7.</td>
-            <td class="col-label">
-                a. Lamanya Perjalanan Dinas<br>
-                b. Tanggal Berangkat<br>
-                c. Tanggal Harus Kembali
-            </td>
-            <td class="col-value">
-                @php
-                    $start = \Carbon\Carbon::parse($travelRequest->start_date);
-                    $end = \Carbon\Carbon::parse($travelRequest->end_date);
-                    $days = $start->diffInDays($end) + 1;
-                @endphp
-                a. {{ $days }} ({{ $days == 1 ? 'Satu' : ($days == 2 ? 'Dua' : ($days == 3 ? 'Tiga' : $days)) }}) hari<br>
-                b. {{ $start->format('d F Y') }}<br>
-                c. {{ $end->format('d F Y') }}
+            <td class="no">5.</td>
+            <td class="label">Tanggal Berangkat &amp; Kembali</td>
+            <td>
+                {{ optional($travelRequest->start_date)->format('d M Y') ?? $travelRequest->start_date }}
+                s/d
+                {{ optional($travelRequest->end_date)->format('d M Y') ?? $travelRequest->end_date }}
             </td>
         </tr>
         <tr>
-            <td class="num">8.</td>
-            <td class="col-label">Pengikut / Rombongan</td>
-            <td class="col-value">
-                @if($travelRequest->assignees && count($travelRequest->assignees) > 0)
-                    <ol style="margin: 0; padding-left: 18px;">
-                        @foreach($travelRequest->assignees as $assignee)
-                            <li>{{ $assignee->employee->name ?? '-' }} ({{ $assignee->employee->nip ?? '-' }})</li>
-                        @endforeach
-                    </ol>
-                @else
-                    - (Nihil)
-                @endif
+            <td class="no">6.</td>
+            <td class="label">Transportasi &amp; Akomodasi</td>
+            <td>
+                <strong>Transportasi:</strong> {{ $travelRequest->logistics->transport_type ?? 'Belum Diinput' }}
+                (Kode Booking: {{ $travelRequest->logistics->booking_code_or_ticket ?? '-' }})<br>
+                <strong>Hotel / Akomodasi:</strong> {{ $travelRequest->logistics->hotel_name ?? '-' }}
             </td>
         </tr>
         <tr>
-            <td class="num">9.</td>
-            <td class="col-label">
-                Pembebanan Anggaran<br>
-                a. Instansi / Mata Anggaran<br>
-                b. Estimasi Plafon Biaya
-            </td>
-            <td class="col-value">
-                a. DPA-SKPD Tahun Anggaran {{ date('Y') }}<br>
-                b. Rp {{ number_format($travelRequest->estimated_total_cost ?? 0, 0, ',', '.') }}
-            </td>
-        </tr>
-        <tr>
-            <td class="num">10.</td>
-            <td class="col-label">Keterangan Lain-Lain</td>
-            <td class="col-value">
-                Surat perintah ini diterbitkan secara sah dan tersimpan secara digital pada basis data Gov.Trip.
+            <td class="no">7.</td>
+            <td class="label">Anggaran Terstandarisasi (SBM)</td>
+            <td>
+                <strong>Rp {{ number_format((float) ($travelRequest->advance_payment > 0 ? $travelRequest->advance_payment : $travelRequest->estimated_total_cost), 0, ',', '.') }}</strong>
+                (Status: {{ $travelRequest->status }})
             </td>
         </tr>
     </table>
 
-    <table class="signature-table">
-        <tr>
-            <td style="width: 50%;"></td>
-            <td style="width: 50%; text-align: center;">
-                Dikeluarkan di: Jakarta Pusat<br>
-                Pada tanggal: {{ \Carbon\Carbon::parse($travelRequest->created_at)->format('d F Y') }}<br><br>
-                <strong>Pejabat Pembuat Komitmen,</strong>
-                <br><br><br><br><br>
-                <u><strong>Drs. H. Mulyono, M.Si.</strong></u><br>
-                NIP. 19740512 199803 1 002
-            </td>
-        </tr>
-    </table>
+    @if($travelRequest->assignees && $travelRequest->assignees->count() > 0)
+        <div class="section-title">Daftar Anggota Rombongan Dinas:</div>
+        <table class="grid-table">
+            <thead>
+                <tr>
+                    <th style="width: 30px;">No</th>
+                    <th>Nama Pegawai</th>
+                    <th>NIP</th>
+                    <th>Jabatan</th>
+                    <th>Peran Tim</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($travelRequest->assignees as $index => $item)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $item->employee->name ?? '-' }}</td>
+                        <td>{{ $item->employee->nip ?? '-' }}</td>
+                        <td>{{ $item->employee->position ?? '-' }}</td>
+                        <td>{{ $item->is_leader ? 'Ketua Rombongan' : 'Anggota' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    <div class="signature-box clearfix">
+        <div class="signature-col">
+            <p>
+                Ditetapkan pada: {{ now()->format('d M Y') }}<br>
+                <strong>Pejabat yang Menyetujui,</strong>
+            </p>
+            <br><br><br>
+            @php
+                $lastApproval = $travelRequest->approvals ? $travelRequest->approvals->last() : null;
+            @endphp
+            <p>
+                <strong><u>{{ $lastApproval->approver->name ?? 'Atasan Langsung / Pejabat Berwenang' }}</u></strong><br>
+                NIP: {{ $lastApproval->approver->nip ?? '-' }}
+            </p>
+        </div>
+    </div>
 
 </body>
 </html>
-
