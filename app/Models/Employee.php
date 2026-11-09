@@ -30,11 +30,6 @@ class Employee extends Model
         return $this->belongsTo(Department::class);
     }
 
-    public function supervisor()
-    {
-        return $this->directSupervisor();
-    }
-
     public function directSupervisor()
     {
         return $this->belongsTo(Employee::class, 'direct_supervisor_id');
@@ -42,7 +37,7 @@ class Employee extends Model
 
     public function supervisor()
     {
-        return $this->belongsTo(Employee::class, 'direct_supervisor_id');
+        return $this->directSupervisor();
     }
 
     public function subordinates()
