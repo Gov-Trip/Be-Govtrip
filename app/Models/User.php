@@ -30,6 +30,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function department()
+    {
+        return $this->hasOneThrough(Department::class, Employee::class, 'user_id', 'id', 'id', 'department_id');
+    }
+
     public function employee()
     {
         return $this->hasOne(Employee::class);

@@ -55,7 +55,7 @@ class FinanceController extends Controller
             $q->where('status', 'Selesai')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year);
-        })->sum('total_expense');
+        })->sum('total_real_expense');
 
         // Antrean Verifikasi (Ambil 5 teratas)
         $antreanVerifikasi = TravelRequest::with(['requester', 'expenseReport'])

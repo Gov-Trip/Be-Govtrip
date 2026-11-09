@@ -14,12 +14,14 @@ use App\Http\Controllers\Api\TravelLogisticsController;
 use App\Http\Controllers\Api\TravelRequestController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('api.login');
+Route::post('/Login', [AuthController::class, 'login']);
 
 // Protected Routes (Wajib Token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/Logout', [AuthController::class, 'logout']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
@@ -37,9 +39,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('approvals')->middleware('dept:PROGRAM')->group(function () {
         Route::get('/', [ApprovalController::class, 'index']);      // List Card
         Route::get('/dashboard', [ApprovalController::class, 'dashboard']); // Dashboard Ringkas`
-        Route::get('/{id}', [ApprovalController::class, 'show']);   // Detail Drawer
         Route::get('/history', [ApprovalController::class, 'history']); // List Riwayat Saya (Atasan)
-        Route::post('/{id}', [ApprovalController::class, 'approve']); // Action Setuju/Tolak (yang sudah jalan)
+        Route::get('/{id}', [ApprovalController::class, 'show']);   // Detail Drawer
+        Route::post('/{id}', [ApprovalController::class, 'decide']);
+        Route::post('/{id}/decision', [ApprovalController::class, 'decide']); // Action Setuju/Tolak (yang sudah jalan)
+    });
+
+    // --- MODUL ADMIN TRAVEL (Bruno alias: travel-admin) ---
+    Route::prefix('travel-admin')->middleware('dept:ADMIN_TRAVEL')->group(function () {
+        Route::post('/{id}/logistics', [TravelLogisticsController::class, 'store']);
     });
 
     // --- MODUL ADMIN TRAVEL ---

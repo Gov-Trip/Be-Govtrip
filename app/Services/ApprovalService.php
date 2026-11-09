@@ -19,7 +19,7 @@ class ApprovalService
 
         // 1. Validasi Status Pengajuan
         // Mengakomodasi "Menunggu Atasan" (dari input Bruno) atau "Menunggu Persetujuan" (dari default DB)
-        if (! in_array($currentStatus, ['Menunggu Atasan', 'Menunggu Persetujuan', 'draft', 'Draft'])) {
+        if (! in_array($currentStatus, ['Menunggu Atasan', 'Menunggu Persetujuan', 'Menunggu Persetujuan Atasan', 'draft', 'Draft'])) {
             throw new Exception('Pengajuan ini tidak sedang dalam antrean persetujuan.');
         }
         // 2. Validasi Hak Akses (Hanya Atasan Langsung)
@@ -51,7 +51,7 @@ class ApprovalService
             $sppdNumber = $travelRequest->sppd_number;
             if ($nextStatus === 'Disetujui' && ! $sppdNumber) {
                 // Format SPPD menggunakan 4 karakter pertama UUID agar unik namun rapi
-                $sppdNumber = 'SPPD/'.date('Y/m').'/'.strtoupper(substr($travelRequest->id, 0, 4));
+                $sppdNumber = 'SPPD/'.date('Y/m').'/'.strtoupper(substr(str_replace('-', '', $travelRequest->id), -6));
             }
 
             // 6. Update Status Pengajuan

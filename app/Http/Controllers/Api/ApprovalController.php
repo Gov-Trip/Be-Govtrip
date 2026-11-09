@@ -57,7 +57,7 @@ class ApprovalController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        $departmentId = $user->department_id;
+        $departmentId = $user->employee ? $user->employee->department_id : 4;
 
         // Bantuan query dasar: Cari semua pengajuan dari departemen Atasan ini
         $baseQuery = TravelRequest::whereHas('requester', function ($q) use ($departmentId) {
@@ -83,8 +83,8 @@ class ApprovalController extends Controller
 
         $sedangDinasCount = (clone $baseQuery)
             ->where('status', 'Selesai') // SPPD sudah terbit dan jadwalnya hari ini
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('end_date', '>=', now())
             ->count();
 
         // 2. Ambil List "Pengajuan menunggu" (Tampilkan 5 teratas)
@@ -99,8 +99,8 @@ class ApprovalController extends Controller
         $perjalananTimList = (clone $baseQuery)
             ->with(['requester', 'destinationCity'])
             ->where('status', 'Selesai')
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('end_date', '>=', now())
             ->latest()
             ->take(5)
             ->get();

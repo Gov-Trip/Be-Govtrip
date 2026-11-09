@@ -47,8 +47,8 @@ class TravelLogisticsController extends Controller
 
         // Perjalanan Berjalan (Hari Ini)
         $perjalananBerjalanCount = TravelRequest::where('status', 'Selesai')
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('end_date', '>=', now())
             ->count();
 
         // SPPD Terbit (Bulan Ini)
@@ -65,8 +65,8 @@ class TravelLogisticsController extends Controller
         // List Perjalanan Berjalan (Ambil 5 teratas)
         $perjalananBerjalanList = TravelRequest::with(['requester', 'destinationCity'])
             ->where('status', 'Selesai')
-            ->whereDate('departure_date', '<=', now())
-            ->whereDate('return_date', '>=', now())
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('end_date', '>=', now())
             ->latest()
             ->take(5)
             ->get();

@@ -117,16 +117,22 @@ class TravelRequestController extends Controller
     public function downloadSppd(Request $request, $id)
     {
         try {
-            $userId = $request->user()->id;
+            $employeeId = $request->user()->employee?->id ?? $request->user()->id;
+            $userDept = $request->user()->department?->code;
+            $isPrivileged = in_array($userDept, ['ADMIN_TRAVEL', 'FINANCE', 'SUPER_ADMIN']);
 
-            $travelRequest = TravelRequest::with([
+            $query = TravelRequest::with([
                 'requester.department',
                 'originCity',
                 'destinationCity',
                 'assignees.employee',
-            ])
-                ->where('requester_employee_id', $userId)
-                ->findOrFail($id);
+            ]);
+
+            if (! $isPrivileged) {
+                $query->where('requester_employee_id', $employeeId);
+            }
+
+            $travelRequest = $query->findOrFail($id);
 
             if (! $travelRequest->sppd_number) {
                 return response()->json([
@@ -157,9 +163,11 @@ class TravelRequestController extends Controller
     public function downloadLpjFinal(Request $request, $id)
     {
         try {
-            $userId = $request->user()->id;
+            $employeeId = $request->user()->employee?->id ?? $request->user()->id;
+            $userDept = $request->user()->department?->code;
+            $isPrivileged = in_array($userDept, ['ADMIN_TRAVEL', 'FINANCE', 'SUPER_ADMIN']);
 
-            $travelRequest = TravelRequest::with([
+            $query = TravelRequest::with([
                 'requester.department',
                 'originCity',
                 'destinationCity',
@@ -168,9 +176,13 @@ class TravelRequestController extends Controller
                 'logistics',
                 'expenseReport',
                 'attachments',
-            ])
-                ->where('requester_employee_id', $userId)
-                ->findOrFail($id);
+            ]);
+
+            if (! $isPrivileged) {
+                $query->where('requester_employee_id', $employeeId);
+            }
+
+            $travelRequest = $query->findOrFail($id);
 
             if ($travelRequest->status !== 'Selesai') {
                 return response()->json([
