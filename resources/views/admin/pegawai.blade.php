@@ -29,7 +29,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E8EEF3] text-[13px]">
-                    @foreach($employees ?? [] as $emp)
+                    @forelse($employees ?? [] as $emp)
                         <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
                             <td class="py-3 px-3 text-[#64748B]">{{ $emp->nip }}</td>
                             <td class="py-3 px-3 font-semibold text-[#1E293B]">{{ $emp->name }}</td>
@@ -37,37 +37,13 @@
                             <td class="py-3 px-3 text-[#64748B]">{{ $emp->department->name ?? '-' }}</td>
                             <td class="py-3 px-3"><x-badge status="Aktif">Aktif</x-badge></td>
                         </tr>
-                    @endforeach
-                    @if(empty($employees) || count($employees) === 0)
-                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                            <td class="py-3 px-3 text-[#64748B]">100000005</td>
-                            <td class="py-3 px-3 font-semibold text-[#1E293B]">Andi Pratama</td>
-                            <td class="py-3 px-3 text-[#1E293B]">Staf Perencanaan</td>
-                            <td class="py-3 px-3 text-[#64748B]">Perencanaan & Program</td>
-                            <td class="py-3 px-3"><x-badge status="Aktif">Aktif</x-badge></td>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-[#64748B] text-[13px]">
+                                Belum ada data pegawai yang terdaftar.
+                            </td>
                         </tr>
-                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                            <td class="py-3 px-3 text-[#64748B]">100000006</td>
-                            <td class="py-3 px-3 font-semibold text-[#1E293B]">Budi Santoso</td>
-                            <td class="py-3 px-3 text-[#1E293B]">Analis Program</td>
-                            <td class="py-3 px-3 text-[#64748B]">Perencanaan & Program</td>
-                            <td class="py-3 px-3"><x-badge status="Aktif">Aktif</x-badge></td>
-                        </tr>
-                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                            <td class="py-3 px-3 text-[#64748B]">100000007</td>
-                            <td class="py-3 px-3 font-semibold text-[#1E293B]">Citra Lestari</td>
-                            <td class="py-3 px-3 text-[#1E293B]">Staf Evaluasi</td>
-                            <td class="py-3 px-3 text-[#64748B]">Perencanaan & Program</td>
-                            <td class="py-3 px-3"><x-badge status="Aktif">Aktif</x-badge></td>
-                        </tr>
-                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                            <td class="py-3 px-3 text-[#64748B]">100000004</td>
-                            <td class="py-3 px-3 font-semibold text-[#1E293B]">Bapak Kepala Bidang</td>
-                            <td class="py-3 px-3 text-[#1E293B]">Kepala Bidang Program</td>
-                            <td class="py-3 px-3 text-[#64748B]">Perencanaan & Program</td>
-                            <td class="py-3 px-3"><x-badge status="Aktif">Aktif</x-badge></td>
-                        </tr>
-                    @endif
+                    @endforelse
                 </tbody>
             </table>
         </div>

@@ -11,7 +11,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <x-stat-card
             title="Total Pengguna"
-            value="142"
+            :value="$userCount ?? 0"
             sublabel="Aktif di seluruh SKPD"
             iconBg="bg-[#E3F0FA]"
             iconColor="text-[#0066B3]"
@@ -22,7 +22,7 @@
 
         <x-stat-card
             title="Hak Akses Role"
-            value="6 Level"
+            value="7 Role"
             sublabel="RBAC terkonfigurasi"
             iconBg="bg-[#DFF5F4]"
             iconColor="text-[#0B7A77]"
@@ -33,7 +33,7 @@
 
         <x-stat-card
             title="Unit Kerja / SKPD"
-            value="4 Unit"
+            :value="($deptCount ?? 0) . ' Unit'"
             sublabel="Bidang & Divisi"
             iconBg="bg-[#FFF1D1]"
             iconColor="text-[#8A5A00]"
@@ -43,8 +43,8 @@
         </x-stat-card>
 
         <x-stat-card
-            title="Audit Log Hari Ini"
-            value="28 Event"
+            title="Audit Log Sistem"
+            :value="($auditCount ?? 0) . ' Event'"
             sublabel="Semua aksi tercatat aman"
             iconBg="bg-[#E3F0FA]"
             iconColor="text-[#0066B3]"
@@ -62,7 +62,7 @@
                 <div class="flex items-center justify-between pb-3 border-b border-[#E8EEF3] mb-4">
                     <div>
                         <h3 class="text-[#123B72] text-[15px] font-semibold leading-tight">Distribusi Peran Pengguna</h3>
-                        <p class="text-[#64748B] text-[12px] mt-0.5">Proporsi akun aktif berdasarkan level hak akses</p>
+                        <p class="text-[#64748B] text-[12px] mt-0.5">Proporsi akun aktif berdasarkan level hak akses dari basis data</p>
                     </div>
                     <a href="/superadmin/pengguna" class="text-[12px] text-[#0066B3] font-medium hover:underline">Kelola &rarr;</a>
                 </div>
@@ -70,38 +70,38 @@
                 <div class="flex flex-col gap-3.5 text-[13px]">
                     <div>
                         <div class="flex justify-between mb-1">
-                            <span class="text-[#1E293B] font-medium">Pegawai (Pelaksana)</span>
-                            <span class="text-[#64748B]">82 orang (58%)</span>
+                            <span class="text-[#1E293B] font-medium">Pegawai Pelaksana</span>
+                            <span class="text-[#64748B]">{{ $roleStats['staff']['count'] ?? 0 }} orang ({{ $roleStats['staff']['pct'] ?? 0 }}%)</span>
                         </div>
                         <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div class="bg-[#0066B3] h-full rounded-full" style="width: 58%"></div>
+                            <div class="bg-[#0066B3] h-full rounded-full" style="width: {{ $roleStats['staff']['pct'] ?? 0 }}%"></div>
                         </div>
                     </div>
                     <div>
                         <div class="flex justify-between mb-1">
-                            <span class="text-[#1E293B] font-medium">Atasan Langsung</span>
-                            <span class="text-[#64748B]">38 orang (27%)</span>
+                            <span class="text-[#1E293B] font-medium">Atasan Langsung & Kepala Bidang</span>
+                            <span class="text-[#64748B]">{{ $roleStats['manager']['count'] ?? 0 }} orang ({{ $roleStats['manager']['pct'] ?? 0 }}%)</span>
                         </div>
                         <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div class="bg-[#1684C4] h-full rounded-full" style="width: 27%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <span class="text-[#1E293B] font-medium">Kepala Bidang</span>
-                            <span class="text-[#64748B]">12 orang (8%)</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div class="bg-[#0B7A77] h-full rounded-full" style="width: 8%"></div>
+                            <div class="bg-[#1684C4] h-full rounded-full" style="width: {{ $roleStats['manager']['pct'] ?? 0 }}%"></div>
                         </div>
                     </div>
                     <div>
                         <div class="flex justify-between mb-1">
                             <span class="text-[#1E293B] font-medium">Bendahara & Keuangan</span>
-                            <span class="text-[#64748B]">6 orang (4%)</span>
+                            <span class="text-[#64748B]">{{ $roleStats['finance']['count'] ?? 0 }} orang ({{ $roleStats['finance']['pct'] ?? 0 }}%)</span>
                         </div>
                         <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div class="bg-[#F5A000] h-full rounded-full" style="width: 4%"></div>
+                            <div class="bg-[#0B7A77] h-full rounded-full" style="width: {{ $roleStats['finance']['pct'] ?? 0 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[#1E293B] font-medium">Admin Travel & Super Admin</span>
+                            <span class="text-[#64748B]">{{ $roleStats['admin']['count'] ?? 0 }} orang ({{ $roleStats['admin']['pct'] ?? 0 }}%)</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div class="bg-[#F5A000] h-full rounded-full" style="width: {{ $roleStats['admin']['pct'] ?? 0 }}%"></div>
                         </div>
                     </div>
                 </div>
@@ -114,24 +114,34 @@
                 <div class="flex items-center justify-between pb-3 border-b border-[#E8EEF3] mb-4">
                     <div>
                         <h3 class="text-[#123B72] text-[15px] font-semibold leading-tight">Aktivitas Sistem Terbaru</h3>
-                        <p class="text-[#64748B] text-[12px] mt-0.5">Audit log perubahan konfigurasi & master data</p>
+                        <p class="text-[#64748B] text-[12px] mt-0.5">Audit log perubahan konfigurasi & master data real-time</p>
                     </div>
                     <a href="/superadmin/audit" class="text-[12px] text-[#0066B3] font-medium hover:underline">Semua &rarr;</a>
                 </div>
 
                 <div class="divide-y divide-[#E8EEF3] text-[12.5px]">
-                    <div class="py-2.5">
-                        <span class="font-semibold text-[#1E293B] block">Pengguna baru ditambahkan</span>
-                        <span class="text-[#64748B]">Rudi Hermawan &middot; Pegawai &middot; Kemarin</span>
-                    </div>
-                    <div class="py-2.5">
-                        <span class="font-semibold text-[#1E293B] block">Hak akses diperbarui</span>
-                        <span class="text-[#64748B]">Atasan &middot; Akses monitoring tim &middot; 2 hari lalu</span>
-                    </div>
-                    <div class="py-2.5">
-                        <span class="font-semibold text-[#1E293B] block">Konfigurasi diubah</span>
-                        <span class="text-[#64748B]">Batas waktu LPJ 7 hari &middot; 3 hari lalu</span>
-                    </div>
+                    @forelse($recentAudits as $log)
+                        <div class="py-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-[#1E293B] block truncate max-w-[200px]">
+                                    {{ $log->action }} &middot; {{ $log->module }}
+                                </span>
+                                <span class="text-[11px] text-[#64748B] shrink-0">
+                                    {{ $log->created_at->diffForHumans() }}
+                                </span>
+                            </div>
+                            <span class="text-[#64748B] text-[11.5px]">
+                                Oleh: {{ $log->user?->employee?->name ?? $log->user?->email ?? 'Sistem' }}
+                            </span>
+                            <p class="text-[11.5px] text-[#64748B] mt-0.5 truncate" title="{{ $log->description }}">
+                                {{ $log->description }}
+                            </p>
+                        </div>
+                    @empty
+                        <div class="py-6 text-center text-gray-500 text-xs">
+                            Belum ada aktivitas audit log.
+                        </div>
+                    @endforelse
                 </div>
             </x-card>
         </div>

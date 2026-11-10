@@ -20,50 +20,46 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E8EEF3] text-[13px]">
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3">
-                            <span class="font-semibold text-[#1E293B] block">Bagas Wicaksono, S.E.</span>
-                            <span class="text-[11.5px] text-[#64748B]">NIP: 19850615 200902 1 004</span>
-                        </td>
-                        <td class="py-3 px-3 font-medium text-[#123B72]">Jakarta Pusat</td>
-                        <td class="py-3 px-3 text-[#64748B]">20–22 Sep 2026</td>
-                        <td class="py-3 px-3 text-[#64748B]">Kereta Cepat</td>
-                        <td class="py-3 px-3 text-[#64748B] max-w-[200px] truncate">Rapat koordinasi anggaran</td>
-                        <td class="py-3 px-3"><x-badge status="Berjalan">Sedang dinas</x-badge></td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3">
-                            <span class="font-semibold text-[#1E293B] block">Nadia Maharani, S.Si.</span>
-                            <span class="text-[11.5px] text-[#64748B]">NIP: 19920120 201403 2 001</span>
-                        </td>
-                        <td class="py-3 px-3 font-medium text-[#123B72]">Bogor</td>
-                        <td class="py-3 px-3 text-[#64748B]">21 Sep 2026</td>
-                        <td class="py-3 px-3 text-[#64748B]">Kendaraan dinas</td>
-                        <td class="py-3 px-3 text-[#64748B] max-w-[200px] truncate">Sinkronisasi tata kelola administrasi</td>
-                        <td class="py-3 px-3"><x-badge status="Berjalan">Sedang dinas</x-badge></td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3">
-                            <span class="font-semibold text-[#1E293B] block">Liyana Agustin, S.AP</span>
-                            <span class="text-[11.5px] text-[#64748B]">NIP: 19880412 201101 2 002</span>
-                        </td>
-                        <td class="py-3 px-3 font-medium text-[#123B72]">Yogyakarta</td>
-                        <td class="py-3 px-3 text-[#64748B]">21–23 Sep 2026</td>
-                        <td class="py-3 px-3 text-[#64748B]">Kereta api</td>
-                        <td class="py-3 px-3 text-[#64748B] max-w-[200px] truncate">Sosialisasi regulasi perjalanan dinas</td>
-                        <td class="py-3 px-3"><x-badge status="Berjalan">Sedang dinas</x-badge></td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3">
-                            <span class="font-semibold text-[#1E293B] block">Rudi Hermawan, S.Kom</span>
-                            <span class="text-[11.5px] text-[#64748B]">NIP: 19830911 200604 1 003</span>
-                        </td>
-                        <td class="py-3 px-3 font-medium text-[#123B72]">Surabaya</td>
-                        <td class="py-3 px-3 text-[#64748B]">12–14 Okt 2026</td>
-                        <td class="py-3 px-3 text-[#64748B]">Pesawat</td>
-                        <td class="py-3 px-3 text-[#64748B] max-w-[200px] truncate">Monitoring program regional</td>
-                        <td class="py-3 px-3"><x-badge status="Menunggu">Terjadwal</x-badge></td>
-                    </tr>
+                    @forelse($team as $member)
+                        @php
+                            $latestTrip = $member->travelRequests->first();
+                        @endphp
+                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
+                            <td class="py-3 px-3">
+                                <span class="font-semibold text-[#1E293B] block">{{ $member->name }}</span>
+                                <span class="text-[11.5px] text-[#64748B]">NIP: {{ $member->nip }} &middot; {{ $member->position }}</span>
+                            </td>
+                            <td class="py-3 px-3 font-medium text-[#123B72]">
+                                {{ $latestTrip?->destinationCity?->city_name ?? '-' }}
+                            </td>
+                            <td class="py-3 px-3 text-[#64748B]">
+                                @if($latestTrip)
+                                    {{ \Carbon\Carbon::parse($latestTrip->start_date)->translatedFormat('d M') }}–{{ \Carbon\Carbon::parse($latestTrip->end_date)->translatedFormat('d M Y') }}
+                                @else
+                                    <span class="text-slate-400">Tidak ada jadwal dinas</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-3 text-[#64748B]">
+                                {{ $latestTrip?->logistics?->transport_type ?? '-' }}
+                            </td>
+                            <td class="py-3 px-3 text-[#64748B] max-w-[200px] truncate" title="{{ $latestTrip?->purpose ?? 'Tersedia di instansi' }}">
+                                {{ $latestTrip?->purpose ?? 'Standby di Kantor' }}
+                            </td>
+                            <td class="py-3 px-3">
+                                @if($latestTrip)
+                                    <x-badge :status="$latestTrip->status">{{ $latestTrip->status }}</x-badge>
+                                @else
+                                    <span class="text-[11.5px] font-medium text-[#64748B] bg-slate-100 px-2.5 py-1 rounded-md">Standby di Kantor</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-[#64748B] text-[13px]">
+                                Belum ada anggota tim terdaftar di unit kerja ini.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

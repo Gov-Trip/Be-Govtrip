@@ -117,6 +117,12 @@ class DashboardController extends Controller
             ->whereIn('status', ['Direvisi', 'Revisi', 'Revisi LPJ'])
             ->count();
 
+        $activeTrip = TravelRequest::with(['destinationCity', 'approvals', 'logistics'])
+            ->when($empId, fn ($q) => $q->where('requester_employee_id', $empId))
+            ->whereIn('status', ['Menunggu Persetujuan Atasan', 'Disetujui', 'Siap Berangkat', 'Menunggu Verifikasi LPJ'])
+            ->latest()
+            ->first();
+
         $recentTrips = TravelRequest::with(['destinationCity', 'originCity'])
             ->when($empId, fn ($q) => $q->where('requester_employee_id', $empId))
             ->latest()
@@ -133,7 +139,7 @@ class DashboardController extends Controller
             })
             ->toArray();
 
-        return view('pegawai.dashboard', compact('userName', 'totalTrips', 'pendingCount', 'sppdCount', 'revisiCount', 'recentTrips'));
+        return view('pegawai.dashboard', compact('userName', 'totalTrips', 'pendingCount', 'sppdCount', 'revisiCount', 'recentTrips', 'activeTrip'));
     }
 
     public function pegawaiPengajuan(): View
@@ -450,11 +456,17 @@ class DashboardController extends Controller
     public function pegawaiNotifikasi(): View
     {
         $user = $this->currentUser('Pegawai');
-        $notifications = AuditLog::with('travelRequest')
+        $logs = AuditLog::with('travelRequest')
             ->where('user_id', $user->id)
             ->latest()
             ->take(20)
             ->get();
+
+        if ($logs->isEmpty()) {
+            $logs = AuditLog::with('travelRequest')->latest()->take(5)->get();
+        }
+
+        $notifications = $this->formatNotifications($logs);
 
         return view('pegawai.notifikasi', compact('notifications'));
     }
@@ -480,13 +492,33 @@ class DashboardController extends Controller
         $approvedCount = TravelRequest::whereIn('status', ['Disetujui', 'Siap Berangkat', 'Selesai'])->count();
         $teamCount = Employee::where('department_id', $user->employee?->department_id)->count();
 
+        // Anggota sedang dinas
+        $activeTrips = TravelRequest::with(['requester', 'destinationCity'])
+            ->whereIn('status', ['Siap Berangkat', 'Disetujui'])
+            ->latest()
+            ->take(3)
+            ->get();
+        $activeDinasCount = $activeTrips->count();
+        $activeNames = $activeTrips->map(fn ($t) => $t->requester?->name)->filter()->implode(', ');
+        if (empty($activeNames)) {
+            $activeNames = 'Tidak ada penugasan aktif';
+        }
+
+        // Pagu dan serapan anggaran tim
+        $totalPagu = TravelRequest::sum('estimated_total_cost');
+        $realizedPagu = ExpenseReport::where('status', 'VERIFIED')->sum('total_real_expense');
+        $pctPagu = $totalPagu > 0 ? round(($realizedPagu / $totalPagu) * 100, 1) : 0;
+
         $recentPending = TravelRequest::with(['requester', 'destinationCity'])
             ->whereIn('status', ['Menunggu Persetujuan Atasan', 'Menunggu Persetujuan'])
             ->latest()
             ->take(5)
             ->get();
 
-        return view('atasan.dashboard', compact('userName', 'pendingApprovals', 'approvedCount', 'teamCount', 'recentPending'));
+        return view('atasan.dashboard', compact(
+            'userName', 'pendingApprovals', 'approvedCount', 'teamCount', 'recentPending',
+            'activeDinasCount', 'activeNames', 'totalPagu', 'realizedPagu', 'pctPagu'
+        ));
     }
 
     public function atasanInbox(): View
@@ -548,7 +580,10 @@ class DashboardController extends Controller
     {
         $user = $this->currentUser('Atasan');
         $deptId = $user->employee?->department_id;
-        $team = Employee::with('department')->when($deptId, fn ($q) => $q->where('department_id', $deptId))->get();
+        $team = Employee::with([
+            'department',
+            'travelRequests' => fn ($q) => $q->latest()->with(['destinationCity', 'logistics']),
+        ])->when($deptId, fn ($q) => $q->where('department_id', $deptId))->get();
 
         return view('atasan.tim', compact('team'));
     }
@@ -566,7 +601,8 @@ class DashboardController extends Controller
 
     public function atasanNotifikasi(): View
     {
-        $notifications = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $logs = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $notifications = $this->formatNotifications($logs);
 
         return view('atasan.notifikasi', compact('notifications'));
     }
@@ -584,6 +620,9 @@ class DashboardController extends Controller
         $verifiedLpj = TravelRequest::where('status', 'Selesai')->count();
         $totalAdvance = TravelRequest::sum('advance_payment');
         $totalRealExpense = ExpenseReport::where('status', 'VERIFIED')->sum('total_real_expense');
+        $totalPagu = max(350000000, (float) ($totalAdvance + $totalRealExpense));
+        $sisaPagu = max(0, $totalPagu - $totalRealExpense);
+        $pctPagu = $totalPagu > 0 ? round(($totalRealExpense / $totalPagu) * 100, 1) : 0;
 
         $recentVerifications = TravelRequest::with(['requester', 'destinationCity', 'expenseReport'])
             ->whereIn('status', ['Menunggu Verifikasi LPJ', 'Selesai', 'Revisi LPJ'])
@@ -591,7 +630,10 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('bendahara.dashboard', compact('userName', 'pendingLpj', 'verifiedLpj', 'totalAdvance', 'totalRealExpense', 'recentVerifications'));
+        return view('bendahara.dashboard', compact(
+            'userName', 'pendingLpj', 'verifiedLpj', 'totalAdvance', 'totalRealExpense',
+            'totalPagu', 'sisaPagu', 'pctPagu', 'recentVerifications'
+        ));
     }
 
     public function bendaharaVerifikasi(): View
@@ -652,9 +694,29 @@ class DashboardController extends Controller
     {
         $policies = TravelPolicy::with('destinationCity')->get();
         $totalBudget = TravelRequest::sum('estimated_total_cost');
+        $totalPagu = max(350000000, (float) $totalBudget);
         $realizedBudget = ExpenseReport::where('status', 'VERIFIED')->sum('total_real_expense');
+        $totalAdvance = TravelRequest::whereIn('status', ['Siap Berangkat', 'Menunggu Verifikasi LPJ'])->sum('advance_payment');
 
-        return view('bendahara.anggaran', compact('policies', 'totalBudget', 'realizedBudget'));
+        $deptBreakdown = Department::with(['employees.travelRequests'])->get()->map(function ($dept) {
+            $realisasi = 0;
+            foreach ($dept->employees as $emp) {
+                $realisasi += $emp->travelRequests->where('status', 'Selesai')->sum('estimated_total_cost');
+            }
+            $pagu = 100000000;
+            $sisa = max(0, $pagu - $realisasi);
+            $pct = $pagu > 0 ? round(($realisasi / $pagu) * 100, 1) : 0;
+
+            return [
+                'name' => $dept->name,
+                'pagu' => $pagu,
+                'realisasi' => $realisasi,
+                'sisa' => $sisa,
+                'pct' => $pct,
+            ];
+        });
+
+        return view('bendahara.anggaran', compact('policies', 'totalPagu', 'totalBudget', 'realizedBudget', 'totalAdvance', 'deptBreakdown'));
     }
 
     public function bendaharaLogistik(): View
@@ -686,7 +748,8 @@ class DashboardController extends Controller
 
     public function bendaharaNotifikasi(): View
     {
-        $notifications = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $logs = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $notifications = $this->formatNotifications($logs);
 
         return view('bendahara.notifikasi', compact('notifications'));
     }
@@ -700,17 +763,18 @@ class DashboardController extends Controller
         $user = $this->currentUser('Admin');
         $userName = $user->employee?->name ?? 'Admin Travel';
 
+        $totalEmployees = Employee::count();
         $waitingLogistics = TravelRequest::where('status', 'Disetujui')->count();
         $readyCount = TravelRequest::where('status', 'Siap Berangkat')->count();
         $totalSppd = TravelRequest::whereNotNull('sppd_number')->count();
 
-        $recentApproved = TravelRequest::with(['requester', 'destinationCity'])
-            ->where('status', 'Disetujui')
+        $recentApproved = TravelRequest::with(['requester', 'destinationCity', 'logistics'])
+            ->whereIn('status', ['Disetujui', 'Siap Berangkat'])
             ->latest()
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', compact('userName', 'waitingLogistics', 'readyCount', 'totalSppd', 'recentApproved'));
+        return view('admin.dashboard', compact('userName', 'totalEmployees', 'waitingLogistics', 'readyCount', 'totalSppd', 'recentApproved'));
     }
 
     public function adminPerjalanan(): View
@@ -836,7 +900,8 @@ class DashboardController extends Controller
 
     public function adminNotifikasi(): View
     {
-        $notifications = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $logs = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $notifications = $this->formatNotifications($logs);
 
         return view('admin.notifikasi', compact('notifications'));
     }
@@ -855,9 +920,23 @@ class DashboardController extends Controller
         $tripCount = TravelRequest::count();
         $auditCount = AuditLog::count();
 
+        // Calculate distribution
+        $totalEmployees = Employee::count();
+        $staffCount = Employee::where('grade', 'Staff')->orWhere('position', 'like', '%Staf%')->count();
+        $managerCount = Employee::where('grade', 'Manager')->orWhere('position', 'like', '%Kepala%')->count();
+        $financeCount = Employee::whereHas('department', fn ($q) => $q->where('code', 'FINANCE'))->count();
+        $adminCount = max(1, $totalEmployees - ($staffCount + $managerCount + $financeCount));
+
+        $roleStats = [
+            'staff' => ['count' => $staffCount, 'pct' => $totalEmployees > 0 ? round(($staffCount / $totalEmployees) * 100) : 60],
+            'manager' => ['count' => $managerCount, 'pct' => $totalEmployees > 0 ? round(($managerCount / $totalEmployees) * 100) : 25],
+            'finance' => ['count' => $financeCount, 'pct' => $totalEmployees > 0 ? round(($financeCount / $totalEmployees) * 100) : 10],
+            'admin' => ['count' => $adminCount, 'pct' => $totalEmployees > 0 ? round(($adminCount / $totalEmployees) * 100) : 5],
+        ];
+
         $recentAudits = AuditLog::with(['user.employee', 'travelRequest'])->latest()->take(6)->get();
 
-        return view('superadmin.dashboard', compact('userName', 'userCount', 'deptCount', 'tripCount', 'auditCount', 'recentAudits'));
+        return view('superadmin.dashboard', compact('userName', 'userCount', 'deptCount', 'tripCount', 'auditCount', 'recentAudits', 'roleStats'));
     }
 
     public function superadminPengguna(): View
@@ -954,9 +1033,47 @@ class DashboardController extends Controller
 
     public function superadminNotifikasi(): View
     {
-        $notifications = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $logs = AuditLog::with('travelRequest')->latest()->take(20)->get();
+        $notifications = $this->formatNotifications($logs);
 
         return view('superadmin.notifikasi', compact('notifications'));
+    }
+
+    /**
+     * Map AuditLog collection into structured notification array.
+     */
+    protected function formatNotifications($logs): array
+    {
+        return $logs->map(function ($log) {
+            $action = $log->action ?? 'AUDIT';
+            $category = match (true) {
+                str_contains($action, 'APPROVE') || str_contains($action, 'SUBMIT') || str_contains($action, 'CREATE') || str_contains($action, 'VALID') => 'success',
+                str_contains($action, 'REJECT') || str_contains($action, 'REVISI') => 'warning',
+                str_contains($action, 'DELETE') || str_contains($action, 'FAIL') => 'danger',
+                default => 'info',
+            };
+
+            $title = match ($action) {
+                'CREATE_DRAFT' => 'Draft Pengajuan Dibuat',
+                'SUBMIT_TO_ATASAN' => 'Pengajuan Diserahkan ke Atasan',
+                'APPROVE_BY_ATASAN' => 'Pengajuan Disetujui Atasan',
+                'REJECT_BY_ATASAN' => 'Pengajuan Perlu Revisi / Ditolak',
+                'INPUT_LOGISTICS' => 'Tiket & SPPD Digital Diterbitkan',
+                'REJECT_LOGISTICS' => 'Penyesuaian Jadwal & Kuota Tiket',
+                'SUBMIT_LPJ' => 'LPJ Diserahkan ke Bendahara',
+                'VERIFY_EXPENSE_APPROVED' => 'LPJ Berhasil Diverifikasi Sah',
+                'VERIFY_EXPENSE_REJECTED' => 'Catatan Revisi LPJ dari Bendahara',
+                default => ucwords(strtolower(str_replace('_', ' ', $action))),
+            };
+
+            return [
+                'title' => $title,
+                'description' => $log->description,
+                'time' => $log->created_at ? $log->created_at->diffForHumans() : 'Baru saja',
+                'unread' => $log->created_at ? $log->created_at->greaterThan(now()->subDays(2)) : true,
+                'category' => $category,
+            ];
+        })->toArray();
     }
 
     // ==========================================

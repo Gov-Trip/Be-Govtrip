@@ -20,24 +20,36 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E8EEF3] text-[13px]">
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">LPJ-2026/043</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Citra Lestari</td>
-                        <td class="py-3 px-3 text-[#1E293B]">Bandung</td>
-                        <td class="py-3 px-3 text-[#64748B]">20 Okt 2026</td>
-                        <td class="py-3 px-3 font-semibold text-[#0B7A77]">Rp 2.250.000</td>
-                        <td class="py-3 px-3"><x-badge status="Disetujui">Selesai Diverifikasi</x-badge></td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">LPJ-2026/042</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Andi Pratama</td>
-                        <td class="py-3 px-3 text-[#1E293B]">Semarang</td>
-                        <td class="py-3 px-3 text-[#64748B]">18 Okt 2026</td>
-                        <td class="py-3 px-3 font-semibold text-[#0B7A77]">Rp 1.950.000</td>
-                        <td class="py-3 px-3"><x-badge status="Disetujui">Selesai Diverifikasi</x-badge></td>
-                    </tr>
+                    @forelse($history as $item)
+                        @php
+                            $realCost = (float) ($item->expenseReport?->total_real_expense ?? $item->advance_payment ?? $item->estimated_total_cost);
+                            $auditDate = $item->expenseReport?->updated_at ? $item->expenseReport->updated_at->translatedFormat('d M Y') : $item->updated_at->translatedFormat('d M Y');
+                        @endphp
+                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
+                            <td class="py-3 px-3 font-semibold text-[#123B72]">LPJ-{{ strtoupper(substr($item->id, 0, 6)) }}</td>
+                            <td class="py-3 px-3 font-medium text-[#1E293B]">{{ $item->requester?->name ?? 'Pegawai' }}</td>
+                            <td class="py-3 px-3 text-[#1E293B]">{{ $item->destinationCity?->city_name ?? '-' }}</td>
+                            <td class="py-3 px-3 text-[#64748B]">{{ $auditDate }}</td>
+                            <td class="py-3 px-3 font-semibold text-[#0B7A77]">Rp {{ number_format($realCost, 0, ',', '.') }}</td>
+                            <td class="py-3 px-3">
+                                <x-badge :status="$item->status">{{ $item->status }}</x-badge>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-[#64748B] text-[13px]">
+                                Belum ada riwayat verifikasi LPJ yang tersimpan.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
+
+        @if(method_exists($history, 'hasPages') && $history->hasPages())
+            <div class="mt-4 pt-3 border-t border-[#E8EEF3]">
+                {{ $history->links() }}
+            </div>
+        @endif
     </x-card>
 </x-layouts.app>

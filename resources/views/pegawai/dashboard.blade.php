@@ -56,28 +56,57 @@
 
     <!-- Stepper Timeline Card -->
     <x-card>
-        <div class="flex items-start justify-between gap-3 mb-4">
-            <div>
-                <h3 class="text-[#123B72] text-[15px] sm:text-[16px] font-semibold leading-tight">
-                    Alur Perjalanan Dinas Aktif: PD-2026/087 (Yogyakarta)
-                </h3>
-                <p class="text-[#64748B] text-[12.5px] mt-0.5">
-                    Tahapan proses dari pengajuan hingga pelaporan LPJ
-                </p>
-            </div>
-            <x-badge status="Berjalan">Berjalan</x-badge>
-        </div>
+        @if(!empty($activeTrip))
+            @php
+                $status = $activeTrip->status;
+                $activeNum = $activeTrip->sppd_number ?? ('PD-'.strtoupper(substr($activeTrip->id, 0, 8)));
+                $activeCity = $activeTrip->destinationCity?->city_name ?? 'Dinas Luar';
 
-        @php
-            $steps = [
-                ['label' => 'Draft', 'sublabel' => '14 Sep', 'status' => 'completed'],
-                ['label' => 'Persetujuan Atasan', 'sublabel' => 'Disetujui', 'status' => 'completed'],
-                ['label' => 'Kepala Bidang', 'sublabel' => 'Disetujui', 'status' => 'completed'],
-                ['label' => 'Penerbitan SPPD', 'sublabel' => 'Terbit', 'status' => 'completed'],
-                ['label' => 'Pelaksanaan & LPJ', 'sublabel' => 'Sedang berjalan', 'status' => 'current'],
-            ];
-        @endphp
-        <x-stepper :steps="$steps" orientation="horizontal" />
+                $isApprovalDone = in_array($status, ['Disetujui', 'Siap Berangkat', 'Menunggu Verifikasi LPJ', 'Selesai']);
+                $isLogisticsDone = in_array($status, ['Siap Berangkat', 'Menunggu Verifikasi LPJ', 'Selesai']);
+                $isLpjDone = ($status === 'Selesai');
+
+                $steps = [
+                    ['label' => 'Draft Pengajuan', 'sublabel' => \Carbon\Carbon::parse($activeTrip->created_at)->translatedFormat('d M'), 'status' => 'completed'],
+                    ['label' => 'Persetujuan Atasan', 'sublabel' => $isApprovalDone ? 'Disetujui' : ($status === 'Menunggu Persetujuan Atasan' ? 'Menunggu Review' : '-'), 'status' => $isApprovalDone ? 'completed' : ($status === 'Menunggu Persetujuan Atasan' ? 'current' : 'upcoming')],
+                    ['label' => 'Logistik & SPPD', 'sublabel' => $isLogisticsDone ? 'Terbit' : ($status === 'Disetujui' ? 'Input Tiket' : '-'), 'status' => $isLogisticsDone ? 'completed' : ($status === 'Disetujui' ? 'current' : 'upcoming')],
+                    ['label' => 'Pelaksanaan & LPJ', 'sublabel' => $isLpjDone ? 'Selesai Sah' : ($status === 'Menunggu Verifikasi LPJ' ? 'Verifikasi' : ($status === 'Siap Berangkat' ? 'Berjalan' : '-')), 'status' => $isLpjDone ? 'completed' : (in_array($status, ['Siap Berangkat', 'Menunggu Verifikasi LPJ']) ? 'current' : 'upcoming')],
+                ];
+            @endphp
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div>
+                    <h3 class="text-[#123B72] text-[15px] sm:text-[16px] font-semibold leading-tight">
+                        Alur Perjalanan Dinas Aktif: {{ $activeNum }} ({{ $activeCity }})
+                    </h3>
+                    <p class="text-[#64748B] text-[12.5px] mt-0.5">
+                        Tahapan proses dari pengajuan, tiket SBM, hingga verifikasi LPJ
+                    </p>
+                </div>
+                <x-badge :status="$status">{{ $status }}</x-badge>
+            </div>
+            <x-stepper :steps="$steps" orientation="horizontal" />
+        @else
+            <div class="flex items-center justify-between pb-3 border-b border-[#E8EEF3] mb-4">
+                <div>
+                    <h3 class="text-[#123B72] text-[15px] sm:text-[16px] font-semibold leading-tight">
+                        Alur Proses Standar Perjalanan Dinas Gov.Trip
+                    </h3>
+                    <p class="text-[#64748B] text-[12.5px] mt-0.5">
+                        Ajukan rencana perjalanan baru untuk memulai proses otomatisasi SPPD digital
+                    </p>
+                </div>
+                <a href="/pegawai/pengajuan" class="text-[12.5px] font-semibold text-[#0066B3] hover:underline">+ Buat Pengajuan</a>
+            </div>
+            @php
+                $steps = [
+                    ['label' => 'Draft Pengajuan', 'sublabel' => 'Pilih Rombongan & Kota', 'status' => 'upcoming'],
+                    ['label' => 'Persetujuan Atasan', 'sublabel' => 'Verifikasi / Bypass', 'status' => 'upcoming'],
+                    ['label' => 'Logistik & SPPD', 'sublabel' => 'Tiket SBM Terbit', 'status' => 'upcoming'],
+                    ['label' => 'Pelaksanaan & LPJ', 'sublabel' => 'Verifikasi Finance', 'status' => 'upcoming'],
+                ];
+            @endphp
+            <x-stepper :steps="$steps" orientation="horizontal" />
+        @endif
     </x-card>
 
     <!-- Recent Trips Table Card -->
@@ -109,14 +138,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E8EEF3] text-[13px]">
-                    @php
-                        $trips = $recentTrips ?? [
-                            ['number' => 'PD-2026/087', 'destination' => 'Yogyakarta', 'dates' => '21–23 Sep', 'status' => 'Berjalan'],
-                            ['number' => 'PD-2026/091', 'destination' => 'Bandung', 'dates' => '6–8 Okt', 'status' => 'Menunggu'],
-                            ['number' => 'PD-2026/079', 'destination' => 'Makassar', 'dates' => '14–16 Sep', 'status' => 'LPJ perlu diunggah'],
-                        ];
-                    @endphp
-                    @foreach($trips as $trip)
+                    @forelse($recentTrips ?? [] as $trip)
                         <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
                             <td class="py-3 px-3 font-semibold text-[#123B72]">{{ $trip['number'] }}</td>
                             <td class="py-3 px-3 text-[#1E293B]">{{ $trip['destination'] }}</td>
@@ -126,7 +148,13 @@
                                 <a href="/pegawai/perjalanan" class="text-[#0066B3] hover:underline font-medium text-[12.5px]">Detail</a>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-[#64748B] text-[13px]">
+                                Belum ada riwayat pengajuan perjalanan dinas. Silakan klik "Ajukan perjalanan baru".
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

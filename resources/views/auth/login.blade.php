@@ -129,63 +129,7 @@
                     Masuk
                 </button>
             </form>
-
-            <!-- Demo Fast Navigation per Role -->
-            <div class="w-full mt-5 pt-4 border-t border-[#E8EEF3]">
-                <span class="text-[11.5px] text-[#64748B] block text-center mb-2 font-medium">
-                    Masuk Cepat Demo Peran:
-                </span>
-                <div class="grid grid-cols-2 gap-2 text-center text-[12px]">
-                    <button
-                        type="button"
-                        onclick="setDemoAndSubmit('admintravel@gov.trip', 'password123')"
-                        class="py-1.5 px-2 bg-[#F1F7FB] hover:bg-[#E3F0FA] text-[#0066B3] rounded-lg font-medium transition-colors cursor-pointer"
-                    >
-                        Admin Travel
-                    </button>
-                    <button
-                        type="button"
-                        onclick="setDemoAndSubmit('karyawan@gov.trip', 'password123')"
-                        class="py-1.5 px-2 bg-[#F1F7FB] hover:bg-[#E3F0FA] text-[#0066B3] rounded-lg font-medium transition-colors cursor-pointer"
-                    >
-                        Pegawai
-                    </button>
-                    <button
-                        type="button"
-                        onclick="setDemoAndSubmit('manager@gov.trip', 'password123')"
-                        class="py-1.5 px-2 bg-[#F1F7FB] hover:bg-[#E3F0FA] text-[#0066B3] rounded-lg font-medium transition-colors cursor-pointer"
-                    >
-                        Atasan
-                    </button>
-                    <button
-                        type="button"
-                        onclick="setDemoAndSubmit('bendahara@gov.trip', 'password123')"
-                        class="py-1.5 px-2 bg-[#FFF1D1] hover:bg-[#fee7b3] text-[#8A5A00] rounded-lg font-semibold transition-colors cursor-pointer"
-                    >
-                        Bendahara
-                    </button>
-                    <button
-                        type="button"
-                        onclick="setDemoAndSubmit('admin@gov.trip', 'password123')"
-                        class="col-span-2 py-1.5 px-2 bg-[#123B72] hover:bg-[#0066B3] text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-                            <path d="m9 12 2 2 4-4" />
-                        </svg>
-                        Super Administrator
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
-
-    <script>
-        function setDemoAndSubmit(email, pass) {
-            document.getElementById('email').value = email;
-            document.getElementById('password').value = pass;
-            document.getElementById('loginForm').submit();
-        }
-    </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
     <x-hero-banner
         title="Halo, {{ $userName ?? 'Bapak Kepala Bidang' }}!"
         subtitle="Kelola persetujuan perjalanan dinas bawahan dan pantau penugasan tim secara real-time."
-        actionText="Buka Kotak Masuk (3)"
+        actionText="Buka Kotak Masuk ({{ $pendingApprovals ?? 0 }})"
         actionHref="/atasan/inbox"
     />
 
@@ -11,7 +11,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <x-stat-card
             title="Menunggu Persetujuan"
-            value="3"
+            :value="$pendingApprovals ?? 0"
             sublabel="butuh keputusan Anda"
             iconBg="bg-[#FFF1D1]"
             iconColor="text-[#8A5A00]"
@@ -22,8 +22,8 @@
 
         <x-stat-card
             title="Anggota Sedang Dinas"
-            value="3"
-            sublabel="Bagas, Nadia, Liyana"
+            :value="$activeDinasCount ?? $teamCount ?? 0"
+            :sublabel="$activeNames ?? 'Anggota Tim'"
             iconBg="bg-[#E3F0FA]"
             iconColor="text-[#0066B3]"
             href="/atasan/tim"
@@ -32,9 +32,9 @@
         </x-stat-card>
 
         <x-stat-card
-            title="Disetujui Bulan Ini"
-            value="14"
-            sublabel="+2 dibanding bulan lalu"
+            title="Total Disetujui"
+            :value="$approvedCount ?? 0"
+            sublabel="pengajuan penugasan tim"
             iconBg="bg-[#DFF5F4]"
             iconColor="text-[#0B7A77]"
             href="/atasan/riwayat"
@@ -44,8 +44,8 @@
 
         <x-stat-card
             title="Pagu Anggaran Tim"
-            value="Rp 85 Jt"
-            sublabel="Terserap 56%"
+            :value="'Rp ' . number_format(($totalPagu ?? 0) / 1000000, 1, ',', '.') . ' Jt'"
+            :sublabel="'Terserap ' . ($pctPagu ?? 0) . '%'"
             iconBg="bg-[#FFF1D1]"
             iconColor="text-[#8A5A00]"
         >
@@ -64,47 +64,31 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="p-4 rounded-[12px] border border-[#E8EEF3] bg-white hover:border-[#0066B3] transition-all flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="font-bold text-[14px] text-[#123B72]">Rudi &middot; Surabaya</span>
-                        <x-badge status="Menunggu">Menunggu</x-badge>
+            @forelse($recentPending as $trip)
+                <div class="p-4 rounded-[12px] border border-[#E8EEF3] bg-white hover:border-[#0066B3] transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-[14px] text-[#123B72] truncate max-w-[180px]">
+                                {{ $trip->requester?->name ?? 'Pegawai' }} &middot; {{ $trip->destinationCity?->city_name ?? 'Kota Tujuan' }}
+                            </span>
+                            <x-badge status="Menunggu">Menunggu</x-badge>
+                        </div>
+                        <span class="text-[12px] text-[#64748B] block">
+                            {{ $trip->sppd_number ?? ('PD-'.strtoupper(substr($trip->id, 0, 8))) }} &middot; {{ \Carbon\Carbon::parse($trip->start_date)->translatedFormat('d M') }}–{{ \Carbon\Carbon::parse($trip->end_date)->translatedFormat('d M Y') }}
+                        </span>
+                        <span class="text-[12px] text-[#64748B] block mt-1">
+                            Estimasi Biaya: <strong class="text-[#1E293B]">Rp {{ number_format((float) $trip->estimated_total_cost, 0, ',', '.') }}</strong>
+                        </span>
                     </div>
-                    <span class="text-[12px] text-[#64748B] block">PD-2026/093 &middot; 12–14 Okt 2026</span>
-                    <span class="text-[12px] text-[#64748B] block mt-1">Estimasi Biaya: <strong class="text-[#1E293B]">Rp 6.120.000</strong></span>
-                </div>
-                <div class="mt-4 pt-3 border-t border-[#E8EEF3] flex justify-end">
-                    <a href="/atasan/inbox" class="text-[12.5px] font-semibold text-[#0066B3] hover:underline">Review & Putuskan &rarr;</a>
-                </div>
-            </div>
-
-            <div class="p-4 rounded-[12px] border border-[#E8EEF3] bg-white hover:border-[#0066B3] transition-all flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="font-bold text-[14px] text-[#123B72]">Sari &middot; Yogyakarta</span>
-                        <x-badge status="Menunggu">Menunggu</x-badge>
+                    <div class="mt-4 pt-3 border-t border-[#E8EEF3] flex justify-end">
+                        <a href="/atasan/inbox" class="text-[12.5px] font-semibold text-[#0066B3] hover:underline">Review & Putuskan &rarr;</a>
                     </div>
-                    <span class="text-[12px] text-[#64748B] block">PD-2026/094 &middot; 15–17 Okt 2026</span>
-                    <span class="text-[12px] text-[#64748B] block mt-1">Estimasi Biaya: <strong class="text-[#1E293B]">Rp 3.500.000</strong></span>
                 </div>
-                <div class="mt-4 pt-3 border-t border-[#E8EEF3] flex justify-end">
-                    <a href="/atasan/inbox" class="text-[12.5px] font-semibold text-[#0066B3] hover:underline">Review & Putuskan &rarr;</a>
+            @empty
+                <div class="col-span-3 text-center py-8 text-[#64748B] text-[13px] bg-slate-50/50 rounded-[12px]">
+                    Tidak ada antrean pengajuan yang menunggu keputusan saat ini.
                 </div>
-            </div>
-
-            <div class="p-4 rounded-[12px] border border-[#E8EEF3] bg-white hover:border-[#0066B3] transition-all flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="font-bold text-[14px] text-[#123B72]">Bagas &middot; Jakarta</span>
-                        <x-badge status="Menunggu">Menunggu</x-badge>
-                    </div>
-                    <span class="text-[12px] text-[#64748B] block">PD-2026/095 &middot; 24–26 Okt 2026</span>
-                    <span class="text-[12px] text-[#64748B] block mt-1">Estimasi Biaya: <strong class="text-[#1E293B]">Rp 4.250.000</strong></span>
-                </div>
-                <div class="mt-4 pt-3 border-t border-[#E8EEF3] flex justify-end">
-                    <a href="/atasan/inbox" class="text-[12.5px] font-semibold text-[#0066B3] hover:underline">Review & Putuskan &rarr;</a>
-                </div>
-            </div>
+            @endforelse
         </div>
     </x-card>
 </x-layouts.app>

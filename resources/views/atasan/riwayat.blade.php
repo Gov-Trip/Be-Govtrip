@@ -20,32 +20,47 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E8EEF3] text-[13px]">
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">PD-2026/088</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Bagas Wicaksono</td>
-                        <td class="py-3 px-3 text-[#1E293B]">Jakarta</td>
-                        <td class="py-3 px-3 text-[#64748B]">17 Sep 2026</td>
-                        <td class="py-3 px-3"><x-badge status="Disetujui">Disetujui</x-badge></td>
-                        <td class="py-3 px-3 text-[#64748B]">Disetujui, diteruskan ke Kepala Bidang</td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">PD-2026/087</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Liyana Agustin</td>
-                        <td class="py-3 px-3 text-[#1E293B]">Yogyakarta</td>
-                        <td class="py-3 px-3 text-[#64748B]">14 Sep 2026</td>
-                        <td class="py-3 px-3"><x-badge status="Disetujui">Disetujui</x-badge></td>
-                        <td class="py-3 px-3 text-[#64748B]">Sesuai dengan agenda sosialisasi kementerian</td>
-                    </tr>
-                    <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
-                        <td class="py-3 px-3 font-semibold text-[#123B72]">PD-2026/081</td>
-                        <td class="py-3 px-3 font-medium text-[#1E293B]">Sari Rahayu</td>
-                        <td class="py-3 px-3 text-[#1E293B]">Solo</td>
-                        <td class="py-3 px-3 text-[#64748B]">10 Sep 2026</td>
-                        <td class="py-3 px-3"><x-badge status="Disetujui">Disetujui</x-badge></td>
-                        <td class="py-3 px-3 text-[#64748B]">Disetujui penuh</td>
-                    </tr>
+                    @forelse($history as $item)
+                        @php
+                            $approval = $item->approvals->first();
+                            $dateDecided = $approval?->created_at ? $approval->created_at->translatedFormat('d M Y') : $item->updated_at->translatedFormat('d M Y');
+                            $note = $approval?->notes ?? $item->rejection_reason ?? 'Disetujui untuk diproses tiket/hotel.';
+                        @endphp
+                        <tr class="hover:bg-[#F1F7FB]/50 transition-colors">
+                            <td class="py-3 px-3 font-semibold text-[#123B72]">
+                                {{ $item->sppd_number ?? ('PD-'.strtoupper(substr($item->id, 0, 8))) }}
+                            </td>
+                            <td class="py-3 px-3 font-medium text-[#1E293B]">
+                                {{ $item->requester?->name ?? 'Pegawai' }}
+                            </td>
+                            <td class="py-3 px-3 text-[#1E293B]">
+                                {{ $item->destinationCity?->city_name ?? '-' }}
+                            </td>
+                            <td class="py-3 px-3 text-[#64748B]">
+                                {{ $dateDecided }}
+                            </td>
+                            <td class="py-3 px-3">
+                                <x-badge :status="$item->status">{{ $item->status }}</x-badge>
+                            </td>
+                            <td class="py-3 px-3 text-[#64748B] max-w-[240px] truncate" title="{{ $note }}">
+                                {{ $note }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-[#64748B] text-[13px]">
+                                Belum ada riwayat persetujuan keputusan perjalanan dinas.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
+
+        @if(method_exists($history, 'hasPages') && $history->hasPages())
+            <div class="mt-4 pt-3 border-t border-[#E8EEF3]">
+                {{ $history->links() }}
+            </div>
+        @endif
     </x-card>
 </x-layouts.app>
