@@ -111,6 +111,19 @@
                                   class="w-full px-3.5 py-2.5 text-[13.5px] text-[#1E293B] bg-white border border-[#E8EEF3] rounded-[10px] focus:outline-none focus:border-[#0066B3]">{{ isset($travel) ? $travel->purpose : 'Rapat koordinasi penyusunan program regional bersama kementerian dan dinas terkait.' }}</textarea>
                     </div>
 
+                    <!-- Upload Dokumen Pendukung (Surat Undangan / Nota Dinas / Telaahan Staf) -->
+                    <div class="flex flex-col">
+                        <label class="text-[#64748B] text-[12.5px] font-medium mb-1.5 flex items-center justify-between">
+                            <span>Dokumen Pendukung / Surat Undangan / Nota Dinas</span>
+                            @if(isset($travel) && $travel->attachments && $travel->attachments->isNotEmpty())
+                                <span class="text-[#0066B3] font-semibold text-[11.5px]">Dokumen Terunggah: {{ basename($travel->attachments->first()->file_path) }}</span>
+                            @endif
+                        </label>
+                        <input type="file" name="attachment_document" id="attachmentDocument" accept=".pdf,.png,.jpg,.jpeg"
+                               class="w-full px-3.5 py-2 text-[13px] text-[#1E293B] bg-white border border-[#E8EEF3] rounded-[10px] focus:outline-none focus:border-[#0066B3] file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[12px] file:font-semibold file:bg-[#E3F0FA] file:text-[#0066B3] hover:file:bg-[#d0e5f5]" />
+                        <span class="text-[11px] text-[#64748B] mt-1">* Format PDF, JPG, atau PNG (maks 5MB) sebagai dokumen dasar permohonan dinas.</span>
+                    </div>
+
                     <!-- Estimasi Biaya Grid -->
                     <div class="pt-2">
                         <div class="flex items-center justify-between mb-2">
@@ -187,11 +200,12 @@
 
                 @php
                     $steps = [
-                        ['label' => 'Draft Pengajuan', 'sublabel' => 'Kota & Rombongan', 'status' => 'completed'],
-                        ['label' => 'Cek Matriks Bypass', 'sublabel' => 'Bypass Otomatis / Atasan', 'status' => 'current'],
-                        ['label' => 'Persetujuan Atasan', 'sublabel' => 'Kabid / Kadis', 'status' => 'upcoming'],
-                        ['label' => 'Logistik & Tiket', 'sublabel' => 'Admin Travel SBM', 'status' => 'upcoming'],
-                        ['label' => 'Verifikasi LPJ', 'sublabel' => 'Bendahara Keuangan', 'status' => 'upcoming'],
+                        ['label' => 'Buat Pengajuan', 'sublabel' => 'Kota & Rombongan', 'status' => 'completed'],
+                        ['label' => 'Upload Dokumen', 'sublabel' => 'Undangan / Nota Dinas', 'status' => 'current'],
+                        ['label' => 'Approval Atasan', 'sublabel' => 'Kepala Seksi', 'status' => 'upcoming'],
+                        ['label' => 'Approval Kabid', 'sublabel' => 'Kepala Bidang', 'status' => 'upcoming'],
+                        ['label' => 'Approval Kadis', 'sublabel' => 'Kepala Dinas & SPPD', 'status' => 'upcoming'],
+                        ['label' => 'Verifikasi Bendahara', 'sublabel' => 'Verifikasi LPJ', 'status' => 'upcoming'],
                     ];
                 @endphp
                 <x-stepper :steps="$steps" orientation="vertical" />

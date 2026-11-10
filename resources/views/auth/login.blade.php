@@ -57,7 +57,7 @@
                             type="text"
                             id="email"
                             name="email"
-                            value="{{ old('email', 'karyawan@gov.trip') }}"
+                            value="{{ old('email') }}"
                             required
                             placeholder="1988... / nama@instansi.go.id"
                             class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-[#E8EEF3] rounded-[10px] text-[13px] text-[#1E293B] placeholder-[#94A3B8] focus:outline-none focus:border-[#0066B3] focus:ring-1 focus:ring-[#0066B3] transition-all"
@@ -81,7 +81,6 @@
                             type="password"
                             id="password"
                             name="password"
-                            value="password123"
                             required
                             placeholder="Masukkan kata sandi"
                             class="w-full pl-10 pr-10 py-2.5 bg-white border border-[#E8EEF3] rounded-[10px] text-[13px] text-[#1E293B] placeholder-[#94A3B8] focus:outline-none focus:border-[#0066B3] focus:ring-1 focus:ring-[#0066B3] transition-all"

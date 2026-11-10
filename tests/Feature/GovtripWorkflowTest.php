@@ -10,6 +10,7 @@ use App\Models\TravelRequest;
 use App\Models\User;
 use App\Services\PermissionMatrixService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -19,7 +20,11 @@ class GovtripWorkflowTest extends TestCase
 
     protected User $superAdmin;
 
+    protected User $kadis;
+
     protected User $manager;
+
+    protected User $atasan;
 
     protected User $pegawai;
 
@@ -62,17 +67,31 @@ class GovtripWorkflowTest extends TestCase
             'nip' => '100000003', 'name' => 'Kang Tiket', 'position' => 'Staff Logistik', 'grade' => 'Staff',
         ]);
 
+        $this->kadis = User::create(['email' => 'kadis@gov.trip', 'password' => $pwd, 'is_active' => true]);
+        $empKadis = Employee::create([
+            'user_id' => $this->kadis->id, 'department_id' => $deptProgram->id,
+            'nip' => '100000000', 'name' => 'Bapak Kepala Dinas', 'position' => 'Kepala Dinas', 'grade' => 'Director',
+        ]);
+
         $this->manager = User::create(['email' => 'manager@gov.trip', 'password' => $pwd, 'is_active' => true]);
         $empManager = Employee::create([
             'user_id' => $this->manager->id, 'department_id' => $deptProgram->id,
             'nip' => '100000004', 'name' => 'Bapak Kepala Bidang', 'position' => 'Kepala Bidang Program', 'grade' => 'Manager',
+            'direct_supervisor_id' => $empKadis->id,
+        ]);
+
+        $this->atasan = User::create(['email' => 'atasan@gov.trip', 'password' => $pwd, 'is_active' => true]);
+        $empAtasan = Employee::create([
+            'user_id' => $this->atasan->id, 'department_id' => $deptProgram->id,
+            'nip' => '100000008', 'name' => 'Ibu Kepala Seksi', 'position' => 'Kepala Seksi Perencanaan', 'grade' => 'Supervisor',
+            'direct_supervisor_id' => $empManager->id,
         ]);
 
         $this->pegawai = User::create(['email' => 'karyawan@gov.trip', 'password' => $pwd, 'is_active' => true]);
         Employee::create([
             'user_id' => $this->pegawai->id, 'department_id' => $deptProgram->id,
             'nip' => '100000005', 'name' => 'Andi Pratama', 'position' => 'Staf Perencanaan', 'grade' => 'Staff',
-            'direct_supervisor_id' => $empManager->id,
+            'direct_supervisor_id' => $empAtasan->id,
         ]);
 
         // 3. Setup Cities & Policies
@@ -119,13 +138,15 @@ class GovtripWorkflowTest extends TestCase
     {
         $this->actingAs($this->pegawai);
 
-        // 1. Simpan Draft
+        // 1. Simpan Draft dengan Upload Dokumen Pendukung
+        $file = UploadedFile::fake()->create('surat_tugas_bimtek.pdf', 100, 'application/pdf');
         $draftResponse = $this->post('/pegawai/pengajuan', [
             'destination_city_id' => $this->cityDest->id,
             'start_date' => now()->addDays(5)->format('Y-m-d'),
             'end_date' => now()->addDays(7)->format('Y-m-d'),
             'purpose' => 'Koordinasi program kerja regional',
             'action_type' => 'draft',
+            'attachment_document' => $file,
         ]);
 
         $draftResponse->assertRedirect('/pegawai/perjalanan');
@@ -137,6 +158,7 @@ class GovtripWorkflowTest extends TestCase
         $travel = TravelRequest::where('purpose', 'Koordinasi program kerja regional')->first();
         $this->assertNotNull($travel);
         $this->assertNull($travel->sppd_number);
+        $this->assertEquals(1, $travel->attachments()->count());
 
         // 2. Submit Draft ke Atasan (Normal Flow, No Bypass)
         $submitResponse = $this->post("/pegawai/pengajuan/{$travel->id}/submit");
@@ -182,7 +204,11 @@ class GovtripWorkflowTest extends TestCase
     }
 
     /**
-     * Test Step 5: Atasan Decision (Reject / Revision and Approval).
+     * Test Step 5: Multi-Tier Approval Workflow (Atasan -> Kabid -> Kadis -> SPPD Digital).
+     * Sesuai alur:
+     * Approval Atasan (Reject -> Revisi -> Ajukan Ulang) -> Setuju
+     * -> Approval Kabid -> Setuju
+     * -> Approval Kadis -> Setuju -> Terbit SPPD Digital
      */
     public function test_atasan_approval_and_revision_flow(): void
     {
@@ -198,9 +224,8 @@ class GovtripWorkflowTest extends TestCase
             'status' => 'Menunggu Persetujuan Atasan',
         ]);
 
-        $this->actingAs($this->manager);
-
-        // 1. Atasan minta revisi
+        // 1. Level 1: Atasan Langsung minta revisi
+        $this->actingAs($this->atasan);
         $rejectResponse = $this->post('/atasan/decision', [
             'submission_id' => $travel->id,
             'decision' => 'Perlu Revisi',
@@ -227,18 +252,45 @@ class GovtripWorkflowTest extends TestCase
         $this->assertEquals('Menunggu Persetujuan Atasan', $travel->status);
         $this->assertNull($travel->rejection_reason);
 
-        // 3. Atasan menyetujui
-        $this->actingAs($this->manager);
-        $approveResponse = $this->post('/atasan/decision', [
+        // 3. Level 1: Atasan Langsung menyetujui -> naik ke Kepala Bidang
+        $this->actingAs($this->atasan);
+        $approveAtasanResponse = $this->post('/atasan/decision', [
             'submission_id' => $travel->id,
             'decision' => 'Disetujui',
-            'notes' => 'Disetujui, laksanakan tugas sebaik-baiknya.',
+            'notes' => 'Disetujui di tingkat seksi, diteruskan ke Kepala Bidang.',
         ]);
-        $approveResponse->assertRedirect('/atasan/inbox');
+        $approveAtasanResponse->assertRedirect('/atasan/inbox');
+
+        $travel->refresh();
+        $this->assertEquals('Menunggu Persetujuan Kabid', $travel->status);
+        $this->assertNull($travel->sppd_number);
+
+        // 4. Level 2: Kepala Bidang menyetujui -> naik ke Kepala Dinas
+        $this->actingAs($this->manager);
+        $approveKabidResponse = $this->post('/atasan/decision', [
+            'submission_id' => $travel->id,
+            'decision' => 'Disetujui',
+            'notes' => 'Disetujui Kepala Bidang, diteruskan ke Kepala Dinas.',
+        ]);
+        $approveKabidResponse->assertRedirect('/atasan/inbox');
+
+        $travel->refresh();
+        $this->assertEquals('Menunggu Persetujuan Kadis', $travel->status);
+        $this->assertNull($travel->sppd_number);
+
+        // 5. Level 3: Kepala Dinas menyetujui -> Final Disetujui + Nomor SPPD Terbit
+        $this->actingAs($this->kadis);
+        $approveKadisResponse = $this->post('/atasan/decision', [
+            'submission_id' => $travel->id,
+            'decision' => 'Disetujui',
+            'notes' => 'Disetujui Kepala Dinas, laksanakan tugas kedinasan dengan baik.',
+        ]);
+        $approveKadisResponse->assertRedirect('/atasan/inbox');
 
         $travel->refresh();
         $this->assertEquals('Disetujui', $travel->status);
         $this->assertNotNull($travel->sppd_number);
+        $this->assertStringContainsString('SPPD', $travel->sppd_number);
     }
 
     /**

@@ -47,13 +47,7 @@
                         @php
                             $emp = $usr->employee;
                             $dept = $emp?->department;
-                            $deptCode = $dept?->code ?? '';
-                            $roleLabel = match($deptCode) {
-                                'SUPER_ADMIN' => 'Super Admin',
-                                'FINANCE' => 'Bendahara',
-                                'ADMIN_TRAVEL' => 'Admin Travel',
-                                default => ($emp?->grade === 'Manager' ? 'Atasan' : 'Pegawai')
-                            };
+                            $roleLabel = app(\App\Services\PermissionMatrixService::class)->resolveUserRoleLabel($usr);
                         @endphp
                         <tr class="hover:bg-[#F1F7FB]/50 transition-colors user-row">
                             <td class="py-3 px-3">
@@ -111,8 +105,9 @@
                     <div class="flex flex-col">
                         <label class="text-[#64748B] text-[12px] font-medium mb-1">Tingkat Grade</label>
                         <select name="grade" class="px-3 py-2 border border-[#E8EEF3] rounded-[8px] focus:outline-none focus:border-[#0066B3]">
-                            <option value="Staff">Staff</option>
-                            <option value="Manager">Manager / Eselon III</option>
+                            <option value="Staff">Staff / Pelaksana</option>
+                            <option value="Supervisor">Supervisor / Kepala Seksi (Eselon IV)</option>
+                            <option value="Manager">Manager / Kepala Bidang (Eselon III)</option>
                             <option value="Director">Kepala Dinas / Eselon II</option>
                         </select>
                     </div>

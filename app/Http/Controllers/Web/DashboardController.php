@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\ExpenseReport;
 use App\Models\RefCity;
+use App\Models\TravelAttachment;
 use App\Models\TravelPolicy;
 use App\Models\TravelRequest;
 use App\Models\User;
@@ -48,7 +49,9 @@ class DashboardController extends Controller
 
         $emailMap = [
             'Pegawai' => 'karyawan@gov.trip',
-            'Atasan' => 'manager@gov.trip',
+            'Atasan' => 'atasan@gov.trip',
+            'Kabid' => 'manager@gov.trip',
+            'Kadis' => 'kadis@gov.trip',
             'Bendahara' => 'bendahara@gov.trip',
             'Admin' => 'admintravel@gov.trip',
             'Super Admin' => 'admin@gov.trip',
@@ -80,11 +83,23 @@ class DashboardController extends Controller
                             'Super Admin' => 'Pak Super Admin',
                             'Bendahara' => 'Ibu Bendahara',
                             'Admin' => 'Admin Travel',
-                            'Atasan' => 'Bapak Kepala Bidang',
+                            'Kadis' => 'Bapak Kepala Dinas',
+                            'Kabid' => 'Bapak Kepala Bidang',
+                            'Atasan' => 'Ibu Kepala Seksi',
                             default => 'Andi Pratama',
                         },
-                        'position' => 'Staf Pegawai',
-                        'grade' => $fallbackRole === 'Atasan' ? 'Manager' : 'Staff',
+                        'position' => match ($fallbackRole) {
+                            'Kadis' => 'Kepala Dinas',
+                            'Kabid' => 'Kepala Bidang Program',
+                            'Atasan' => 'Kepala Seksi Perencanaan',
+                            default => 'Staf Pegawai',
+                        },
+                        'grade' => match ($fallbackRole) {
+                            'Kadis' => 'Director',
+                            'Kabid' => 'Manager',
+                            'Atasan' => 'Supervisor',
+                            default => 'Staff',
+                        },
                     ]
                 );
                 $user->load('employee.department');
@@ -186,6 +201,17 @@ class DashboardController extends Controller
                 $request->userAgent()
             );
 
+            // Upload Dokumen Pendukung (Surat Undangan / Nota Dinas / Telaahan Staf)
+            if ($request->hasFile('attachment_document')) {
+                $file = $request->file('attachment_document');
+                $path = $file->store('attachments', 'public');
+                TravelAttachment::create([
+                    'travel_request_id' => $travelRequest->id,
+                    'file_type' => 'SURAT_TUGAS',
+                    'file_path' => $path,
+                ]);
+            }
+
             // Periksa apakah pengguna memilih untuk langsung mengirim (Kirim Pengajuan)
             if ($request->input('action_type') === 'submit') {
                 $submitted = $this->travelService->submitToAtasan(
@@ -248,7 +274,7 @@ class DashboardController extends Controller
     public function pegawaiEditPengajuan(string $id): View
     {
         $user = $this->currentUser('Pegawai');
-        $travel = TravelRequest::with(['assignees.employee', 'destinationCity', 'originCity'])->findOrFail($id);
+        $travel = TravelRequest::with(['assignees.employee', 'destinationCity', 'originCity', 'attachments'])->findOrFail($id);
         $cities = RefCity::orderBy('city_name')->get();
         $employees = Employee::with('department')->orderBy('name')->get();
 
@@ -288,6 +314,17 @@ class DashboardController extends Controller
                 $request->userAgent()
             );
 
+            // Upload Dokumen Pendukung Baru jika ada perubahan lampiran
+            if ($request->hasFile('attachment_document')) {
+                $file = $request->file('attachment_document');
+                $path = $file->store('attachments', 'public');
+                TravelAttachment::create([
+                    'travel_request_id' => $updated->id,
+                    'file_type' => 'SURAT_TUGAS',
+                    'file_path' => $path,
+                ]);
+            }
+
             if ($request->input('action_type') === 'submit') {
                 $submitted = $this->travelService->submitToAtasan(
                     $id,
@@ -320,7 +357,7 @@ class DashboardController extends Controller
         $user = $this->currentUser('Pegawai');
         $empId = $user->employee?->id;
 
-        $trips = TravelRequest::with(['destinationCity', 'originCity', 'assignees.employee', 'logistics', 'expenseReport'])
+        $trips = TravelRequest::with(['destinationCity', 'originCity', 'assignees.employee', 'logistics', 'expenseReport', 'attachments', 'approvals.approver'])
             ->when($empId, fn ($q) => $q->where('requester_employee_id', $empId))
             ->latest()
             ->get()
@@ -338,6 +375,8 @@ class DashboardController extends Controller
                     'advance_payment' => (float) $t->advance_payment,
                     'estimated_total_cost' => (float) $t->estimated_total_cost,
                     'assignees_count' => $t->assignees->count(),
+                    'attachment_name' => $t->attachments->first() ? basename($t->attachments->first()->file_path) : null,
+                    'attachment_url' => $t->attachments->first() ? asset('storage/'.$t->attachments->first()->file_path) : null,
                 ];
             })
             ->toArray();
@@ -488,7 +527,14 @@ class DashboardController extends Controller
         $user = $this->currentUser('Atasan');
         $userName = $user->employee?->name ?? 'Bapak Kepala Bidang';
 
-        $pendingApprovals = TravelRequest::whereIn('status', ['Menunggu Persetujuan Atasan', 'Menunggu Approval Atasan', 'Menunggu Persetujuan'])->count();
+        $pendingApprovals = TravelRequest::whereIn('status', [
+            'Menunggu Persetujuan Atasan',
+            'Menunggu Approval Atasan',
+            'Menunggu Atasan',
+            'Menunggu Persetujuan Kabid',
+            'Menunggu Persetujuan Kadis',
+            'Menunggu Persetujuan',
+        ])->count();
         $approvedCount = TravelRequest::whereIn('status', ['Disetujui', 'Siap Berangkat', 'Selesai'])->count();
         $teamCount = Employee::where('department_id', $user->employee?->department_id)->count();
 
@@ -510,7 +556,14 @@ class DashboardController extends Controller
         $pctPagu = $totalPagu > 0 ? round(($realizedPagu / $totalPagu) * 100, 1) : 0;
 
         $recentPending = TravelRequest::with(['requester', 'destinationCity'])
-            ->whereIn('status', ['Menunggu Persetujuan Atasan', 'Menunggu Persetujuan'])
+            ->whereIn('status', [
+                'Menunggu Persetujuan Atasan',
+                'Menunggu Approval Atasan',
+                'Menunggu Atasan',
+                'Menunggu Persetujuan Kabid',
+                'Menunggu Persetujuan Kadis',
+                'Menunggu Persetujuan',
+            ])
             ->latest()
             ->take(5)
             ->get();
@@ -524,13 +577,21 @@ class DashboardController extends Controller
     public function atasanInbox(): View
     {
         $user = $this->currentUser('Atasan');
+        $roleLabel = $this->matrixService->resolveUserRoleLabel($user);
 
-        $pendingRequests = TravelRequest::with(['requester.department', 'destinationCity', 'originCity', 'assignees.employee'])
-            ->whereIn('status', ['Menunggu Persetujuan Atasan', 'Menunggu Approval Atasan', 'Menunggu Persetujuan'])
+        $pendingRequests = TravelRequest::with(['requester.department', 'destinationCity', 'originCity', 'assignees.employee', 'attachments', 'approvals.approver'])
+            ->whereIn('status', [
+                'Menunggu Persetujuan Atasan',
+                'Menunggu Approval Atasan',
+                'Menunggu Atasan',
+                'Menunggu Persetujuan Kabid',
+                'Menunggu Persetujuan Kadis',
+                'Menunggu Persetujuan',
+            ])
             ->latest()
             ->get();
 
-        return view('atasan.inbox', compact('pendingRequests', 'user'));
+        return view('atasan.inbox', compact('pendingRequests', 'user', 'roleLabel'));
     }
 
     public function atasanDecision(Request $request): RedirectResponse
@@ -553,19 +614,24 @@ class DashboardController extends Controller
         }
 
         try {
-            $this->approvalService->processApproval(
+            $res = $this->approvalService->processApproval(
                 $request->submission_id,
                 $user,
                 [
                     'decision' => $mappedDecision,
                     'notes' => $request->notes,
+                    'final_approval' => $request->boolean('final_approval'),
                 ],
                 $request->ip(),
                 $request->userAgent()
             );
 
             $msg = match ($mappedDecision) {
-                'Disetujui' => 'Pengajuan berhasil disetujui. Nomor SPPD digital otomatis diterbitkan.',
+                'Disetujui' => match ($res->status) {
+                    'Menunggu Persetujuan Kabid' => 'Pengajuan berhasil disetujui Atasan Langsung dan diteruskan ke Kepala Bidang.',
+                    'Menunggu Persetujuan Kadis' => 'Pengajuan berhasil disetujui Kepala Bidang dan diteruskan ke Kepala Dinas.',
+                    default => "Pengajuan berhasil disetujui final. Nomor SPPD Digital ({$res->sppd_number}) otomatis diterbitkan.",
+                },
                 'Ditolak' => 'Pengajuan berhasil ditolak dengan catatan alasan penolakan.',
                 default => 'Pengajuan berhasil dikembalikan ke Pegawai untuk perbaikan/revisi.',
             };

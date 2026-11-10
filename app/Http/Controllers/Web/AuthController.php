@@ -44,8 +44,12 @@ class AuthController extends Controller
                 $user = User::where('email', 'admin@gov.trip')->first();
             } elseif (str_contains($lower, 'bendahara') || str_contains($lower, 'keuangan')) {
                 $user = User::where('email', 'bendahara@gov.trip')->first();
-            } elseif (str_contains($lower, 'atasan') || str_contains($lower, 'manager')) {
+            } elseif (str_contains($lower, 'kadis')) {
+                $user = User::where('email', 'kadis@gov.trip')->first();
+            } elseif (str_contains($lower, 'manager') || str_contains($lower, 'kabid')) {
                 $user = User::where('email', 'manager@gov.trip')->first();
+            } elseif (str_contains($lower, 'atasan') || str_contains($lower, 'kasi')) {
+                $user = User::where('email', 'atasan@gov.trip')->first();
             } elseif (str_contains($lower, 'admin') || str_contains($lower, 'travel') || str_contains($lower, 'tiket')) {
                 $user = User::where('email', 'admintravel@gov.trip')->first();
             } else {
@@ -59,6 +63,7 @@ class AuthController extends Controller
 
             $deptCode = $user->employee?->department?->code;
             $grade = $user->employee?->grade;
+            $position = strtolower($user->employee?->position ?? '');
 
             if ($deptCode === 'SUPER_ADMIN') {
                 return redirect()->intended('/superadmin');
@@ -66,8 +71,13 @@ class AuthController extends Controller
                 return redirect()->intended('/bendahara');
             } elseif ($deptCode === 'ADMIN_TRAVEL') {
                 return redirect()->intended('/admin');
-            } elseif ($deptCode === 'PROGRAM') {
-                return $grade === 'Manager' ? redirect()->intended('/atasan') : redirect()->intended('/pegawai');
+            } elseif (in_array($grade, ['Manager', 'Director', 'Supervisor'])
+                || str_contains($position, 'kepala')
+                || str_contains($position, 'kadis')
+                || str_contains($position, 'kabid')
+                || str_contains($position, 'kasi')
+                || str_contains($position, 'atasan')) {
+                return redirect()->intended('/atasan');
             }
 
             return redirect()->intended('/pegawai');

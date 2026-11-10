@@ -21,11 +21,13 @@ class ApprovalService
 
         $currentStatus = $travelRequest->status;
 
-        // 1. Validasi Status Pengajuan (kompatibel dengan semua variasi penamaan)
+        // 1. Validasi Status Pengajuan (kompatibel dengan semua variasi penamaan & level berjenjang)
         $allowedQueueStatuses = [
             'Menunggu Persetujuan Atasan',
             'Menunggu Approval Atasan',
             'Menunggu Atasan',
+            'Menunggu Persetujuan Kabid',
+            'Menunggu Persetujuan Kadis',
             'Menunggu Persetujuan',
             'Draft',
             'draft',
@@ -38,7 +40,13 @@ class ApprovalService
         // 2. Validasi Hak Akses (Hanya Atasan Langsung, Pejabat Manajerial, atau Super Admin)
         $isSupervisor = $travelRequest->requester && $travelRequest->requester->direct_supervisor_id === $approver->id;
         $isSuperAdmin = ($approverUser->employee?->department?->code === 'SUPER_ADMIN');
-        $isManagerOrLeader = in_array($approver->grade, ['Manager', 'Director']) || str_contains(strtolower($approver->position ?? ''), 'kepala') || str_contains(strtolower($approver->position ?? ''), 'kadis') || str_contains(strtolower($approver->position ?? ''), 'kabid');
+        $posLower = strtolower($approver->position ?? '');
+        $isManagerOrLeader = in_array($approver->grade, ['Manager', 'Director', 'Supervisor'])
+            || str_contains($posLower, 'kepala')
+            || str_contains($posLower, 'kadis')
+            || str_contains($posLower, 'kabid')
+            || str_contains($posLower, 'kasi')
+            || str_contains($posLower, 'atasan');
 
         if (! $isSupervisor && ! $isSuperAdmin && ! $isManagerOrLeader) {
             throw new Exception('Akses ditolak. Hanya Atasan Langsung atau pejabat berwenang yang dapat memproses tahap ini.');
@@ -47,17 +55,33 @@ class ApprovalService
         // Ambil catatan / alasan penolakan dari notes atau rejection_reason
         $notes = $data['notes'] ?? $data['rejection_reason'] ?? null;
 
-        // 3. Tentukan Status Berikutnya
+        // 3. Tentukan Status Berikutnya Sesuai Alur Berjenjang (Atasan -> Kabid -> Kadis -> SPPD)
         if ($data['decision'] === 'Disetujui') {
-            $nextStatus = 'Disetujui';
+            $roleLabel = app(PermissionMatrixService::class)->resolveUserRoleLabel($approverUser);
+
+            if (! empty($data['final_approval']) || $isSuperAdmin || $roleLabel === 'Super Admin') {
+                $nextStatus = 'Disetujui';
+            } elseif ($currentStatus === 'Menunggu Persetujuan Kadis' || $roleLabel === 'Kadis') {
+                $nextStatus = 'Disetujui';
+            } elseif ($currentStatus === 'Menunggu Persetujuan Kabid') {
+                $nextStatus = 'Menunggu Persetujuan Kadis';
+            } elseif (in_array($currentStatus, ['Menunggu Persetujuan Atasan', 'Menunggu Approval Atasan', 'Menunggu Atasan', 'Menunggu Persetujuan', 'Draft', 'draft'])) {
+                if ($roleLabel === 'Kabid') {
+                    $nextStatus = 'Menunggu Persetujuan Kadis';
+                } else {
+                    $nextStatus = 'Menunggu Persetujuan Kabid';
+                }
+            } else {
+                $nextStatus = 'Disetujui';
+            }
             $rejectionReason = null;
         } elseif ($data['decision'] === 'Ditolak') {
             $nextStatus = 'Ditolak';
-            $rejectionReason = $notes ?? 'Pengajuan ditolak oleh Atasan.';
+            $rejectionReason = $notes ?? 'Pengajuan ditolak oleh pejabat berwenang.';
         } else {
             // Gunakan 'Direvisi' agar sinkron dengan Dashboard Atasan, Seeder, & Modul Karyawan
             $nextStatus = 'Direvisi';
-            $rejectionReason = $notes ?? 'Pengajuan perlu direvisi sesuai arahan Atasan.';
+            $rejectionReason = $notes ?? 'Pengajuan perlu direvisi sesuai arahan Atasan/Pejabat.';
         }
 
         DB::beginTransaction();

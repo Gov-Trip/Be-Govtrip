@@ -7,7 +7,13 @@
     $authEmp = $authUser?->employee;
 
     // Dynamic badges from live database
-    $pendingAtasan = \App\Models\TravelRequest::whereIn('status', ['Menunggu Persetujuan Atasan', 'Menunggu Approval Atasan', 'Menunggu Persetujuan'])->count();
+    $pendingAtasan = \App\Models\TravelRequest::whereIn('status', [
+        'Menunggu Persetujuan Atasan',
+        'Menunggu Approval Atasan',
+        'Menunggu Persetujuan Kabid',
+        'Menunggu Persetujuan Kadis',
+        'Menunggu Persetujuan',
+    ])->count();
     $pendingLpj = \App\Models\TravelRequest::where('status', 'Menunggu Verifikasi LPJ')->count();
     $waitingLogistics = \App\Models\TravelRequest::where('status', 'Disetujui')->count();
     $draftPegawai = \App\Models\TravelRequest::when($authEmp?->id, fn($q, $id) => $q->where('requester_employee_id', $id))->whereIn('status', ['Draft', 'draft'])->count();
@@ -44,8 +50,8 @@
             ],
         ],
         'Atasan' => [
-            'badge' => 'Peran: Atasan Langsung',
-            'user' => ['name' => 'Bapak Kepala Bidang', 'roleTitle' => 'Kepala Bidang Program', 'avatar' => 'KB'],
+            'badge' => $authEmp ? ('Peran: ' . ($authEmp->position ?? 'Atasan Langsung')) : 'Peran: Atasan Langsung',
+            'user' => ['name' => $authEmp?->name ?? 'Bapak Kepala Bidang', 'roleTitle' => $authEmp?->position ?? 'Kepala Bidang Program', 'avatar' => 'KB'],
             'base' => '/atasan',
             'items' => [
                 ['label' => 'Dashboard', 'href' => '/atasan', 'icon' => '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>'],

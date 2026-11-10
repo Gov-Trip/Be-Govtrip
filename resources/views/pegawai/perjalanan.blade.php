@@ -139,7 +139,7 @@
                                             </a>
                                         @endif
 
-                                        <button type="button" onclick="showTripDetail('{{ $item['number'] }}', '{{ $item['destination'] }}', '{{ $item['dates'] }}', '{{ addslashes($item['purpose']) }}', '{{ $item['status'] }}', '{{ $item['sppd'] ?? '' }}', '{{ $item['id'] }}', '{{ addslashes($item['rejection_reason'] ?? '') }}')"
+                                        <button type="button" onclick="showTripDetail('{{ $item['number'] }}', '{{ $item['destination'] }}', '{{ $item['dates'] }}', '{{ addslashes($item['purpose']) }}', '{{ $item['status'] }}', '{{ $item['sppd'] ?? '' }}', '{{ $item['id'] }}', '{{ addslashes($item['rejection_reason'] ?? '') }}', '{{ $item['attachment_url'] ?? '' }}', '{{ $item['attachment_name'] ?? '' }}')"
                                                 class="px-2.5 py-1 text-[12px] font-medium text-[#0066B3] bg-[#E3F0FA] hover:bg-[#cde4f7] rounded-md transition-colors cursor-pointer">
                                             Detail
                                         </button>
@@ -189,9 +189,22 @@
                     <span class="text-[#64748B]">Status Saat Ini</span>
                     <span id="modalTripStatusBadge"></span>
                 </div>
+
+                <div id="modalAttSection" class="p-2.5 rounded-lg bg-slate-50 border border-[#E8EEF3] flex items-center justify-between hidden">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" class="text-[#0066B3]"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span id="modalAttName" class="text-[12px] font-medium text-[#1E293B]"></span>
+                    </div>
+                    <a id="modalAttLink" href="#" target="_blank" class="text-[11.5px] font-semibold text-[#0066B3] hover:underline">Lihat Dokumen</a>
+                </div>
             </div>
 
             <div id="modalSppdSection" class="pt-2 flex flex-wrap justify-end gap-2">
+                <a id="modalEditTrip" href="#"
+                   class="px-4 py-2 text-[12.5px] font-semibold bg-[#8A5A00] hover:bg-[#724a00] text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    <span>Perbaiki & Ajukan Ulang</span>
+                </a>
                 <a id="modalDownloadSppd" href="#" target="_blank"
                    class="px-4 py-2 text-[12.5px] font-semibold bg-[#0066B3] hover:bg-[#005596] text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -229,7 +242,7 @@
             });
         }
 
-        function showTripDetail(code, dest, dates, purpose, status, sppd, id, reason) {
+        function showTripDetail(code, dest, dates, purpose, status, sppd, id, reason, attUrl, attName) {
             document.getElementById('modalTripCode').innerText = code;
             document.getElementById('modalTripDest').innerText = dest;
             document.getElementById('modalTripDates').innerText = dates;
@@ -237,11 +250,29 @@
             document.getElementById('modalTripStatusBadge').innerHTML = '<span class="px-2.5 py-0.5 rounded-full text-[11.5px] bg-[#E3F0FA] text-[#0066B3] font-medium">' + status + '</span>';
 
             const reasonBox = document.getElementById('modalReasonBox');
+            const editBtn = document.getElementById('modalEditTrip');
             if (reason) {
                 reasonBox.classList.remove('hidden');
                 document.getElementById('modalTripReason').innerText = reason;
             } else {
                 reasonBox.classList.add('hidden');
+            }
+
+            if (status === 'Direvisi' || status === 'Revisi') {
+                editBtn.classList.remove('hidden');
+                editBtn.href = '/pegawai/pengajuan/' + id + '/edit';
+            } else {
+                editBtn.classList.add('hidden');
+            }
+
+            // Attachment in modal
+            const attSec = document.getElementById('modalAttSection');
+            if (attUrl) {
+                attSec.classList.remove('hidden');
+                document.getElementById('modalAttLink').href = attUrl;
+                document.getElementById('modalAttName').innerText = attName || 'Dokumen Pendukung';
+            } else {
+                attSec.classList.add('hidden');
             }
 
             const dlBtn = document.getElementById('modalDownloadSppd');
@@ -263,6 +294,7 @@
             }
 
             document.getElementById('tripModal').classList.remove('hidden');
+        }
         }
 
         function closeTripModal() {

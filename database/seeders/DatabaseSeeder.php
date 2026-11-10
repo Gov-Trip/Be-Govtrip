@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\ExpenseReport;
 use App\Models\RefCity;
 use App\Models\TravelAssignee;
+use App\Models\TravelAttachment;
 use App\Models\TravelPolicy;
 use App\Models\TravelRequest;
 use App\Models\User;
@@ -56,12 +57,30 @@ class DatabaseSeeder extends Seeder
             'position' => 'Staff Logistik', 'grade' => 'Staff',
         ]);
 
-        // Atasan (Kabid / Manager)
+        // Kepala Dinas (Kadis / Director / Pejabat Pembina Kepegawaian)
+        $userKadis = User::create(['email' => 'kadis@gov.trip', 'password' => $defaultPassword, 'is_active' => true]);
+        $kadis = Employee::create([
+            'user_id' => $userKadis->id, 'department_id' => $deptProgram->id,
+            'nip' => '100000000', 'name' => 'Bapak Kepala Dinas',
+            'position' => 'Kepala Dinas', 'grade' => 'Director',
+        ]);
+
+        // Kepala Bidang (Kabid / Manager)
         $userManager = User::create(['email' => 'manager@gov.trip', 'password' => $defaultPassword, 'is_active' => true]);
         $manager = Employee::create([
             'user_id' => $userManager->id, 'department_id' => $deptProgram->id,
             'nip' => '100000004', 'name' => 'Bapak Kepala Bidang',
             'position' => 'Kepala Bidang Program', 'grade' => 'Manager',
+            'direct_supervisor_id' => $kadis->id,
+        ]);
+
+        // Atasan Langsung / Kepala Seksi (Supervisor)
+        $userAtasan = User::create(['email' => 'atasan@gov.trip', 'password' => $defaultPassword, 'is_active' => true]);
+        $atasan = Employee::create([
+            'user_id' => $userAtasan->id, 'department_id' => $deptProgram->id,
+            'nip' => '100000008', 'name' => 'Ibu Kepala Seksi',
+            'position' => 'Kepala Seksi Perencanaan', 'grade' => 'Supervisor',
+            'direct_supervisor_id' => $manager->id,
         ]);
 
         // Karyawan Utama (Andi Pratama)
@@ -70,7 +89,7 @@ class DatabaseSeeder extends Seeder
             'user_id' => $userStaff->id, 'department_id' => $deptProgram->id,
             'nip' => '100000005', 'name' => 'Andi Pratama',
             'position' => 'Staf Perencanaan', 'grade' => 'Staff',
-            'direct_supervisor_id' => $manager->id,
+            'direct_supervisor_id' => $atasan->id,
         ]);
 
         // Karyawan Tambahan 1 (Budi Santoso - Rekan Satu Tim Andi)
@@ -79,7 +98,7 @@ class DatabaseSeeder extends Seeder
             'user_id' => $userBudi->id, 'department_id' => $deptProgram->id,
             'nip' => '100000006', 'name' => 'Budi Santoso',
             'position' => 'Analis Program', 'grade' => 'Staff',
-            'direct_supervisor_id' => $manager->id,
+            'direct_supervisor_id' => $atasan->id,
         ]);
 
         // Karyawan Tambahan 2 (Citra Lestari - Rekan Satu Tim Andi)
@@ -88,7 +107,7 @@ class DatabaseSeeder extends Seeder
             'user_id' => $userCitra->id, 'department_id' => $deptProgram->id,
             'nip' => '100000007', 'name' => 'Citra Lestari',
             'position' => 'Staf Evaluasi', 'grade' => 'Staff',
-            'direct_supervisor_id' => $manager->id,
+            'direct_supervisor_id' => $atasan->id,
         ]);
 
         // =========================================================================
@@ -114,9 +133,19 @@ class DatabaseSeeder extends Seeder
                 'max_transport_rate' => $p['s_trans'], 'effective_year' => 2026,
             ]);
             TravelPolicy::create([
+                'destination_city_id' => $p['city']->id, 'grade_group' => 'Supervisor',
+                'daily_allowance' => $p['m_allow'], 'max_hotel_rate' => $p['m_hotel'],
+                'max_transport_rate' => $p['m_trans'], 'effective_year' => 2026,
+            ]);
+            TravelPolicy::create([
                 'destination_city_id' => $p['city']->id, 'grade_group' => 'Manager',
                 'daily_allowance' => $p['m_allow'], 'max_hotel_rate' => $p['m_hotel'],
                 'max_transport_rate' => $p['m_trans'], 'effective_year' => 2026,
+            ]);
+            TravelPolicy::create([
+                'destination_city_id' => $p['city']->id, 'grade_group' => 'Director',
+                'daily_allowance' => (int) ($p['m_allow'] * 1.25), 'max_hotel_rate' => (int) ($p['m_hotel'] * 1.3),
+                'max_transport_rate' => (int) ($p['m_trans'] * 1.2), 'effective_year' => 2026,
             ]);
         }
 
@@ -208,7 +237,7 @@ class DatabaseSeeder extends Seeder
         // B. MODUL ATASAN (TUGAS: 2 ANTREAN UNTUK DEMO KLIK SETUJU & KLIK TOLAK)
         // -------------------------------------------------------------------------
 
-        // [SKENARIO 5] Antrean Approval 1 (Milik Andi + Rombongan Budi -> Untuk Demo Klik "Setuju")
+        // [SKENARIO 5] Antrean Approval Level 1: Atasan (Milik Andi + Rombongan Budi -> Untuk Demo Klik "Setuju")
         $reqWaitAtasan1 = TravelRequest::create([
             'requester_employee_id' => $staffAndi->id,
             'origin_city_id' => $cityJakarta->id,
@@ -221,8 +250,13 @@ class DatabaseSeeder extends Seeder
         ]);
         TravelAssignee::create(['travel_request_id' => $reqWaitAtasan1->id, 'employee_id' => $staffAndi->id, 'is_leader' => true]);
         TravelAssignee::create(['travel_request_id' => $reqWaitAtasan1->id, 'employee_id' => $staffBudi->id, 'is_leader' => false]);
+        TravelAttachment::create([
+            'travel_request_id' => $reqWaitAtasan1->id,
+            'file_type' => 'SURAT_TUGAS',
+            'file_path' => 'attachments/surat_undangan_rkap_2027.pdf',
+        ]);
 
-        // [SKENARIO 6] Antrean Approval 2 (Milik Budi -> Untuk Demo Klik "Tolak/Revisi" di depan PM)
+        // [SKENARIO 6] Antrean Approval Level 1: Atasan (Milik Budi -> Untuk Demo Klik "Tolak/Revisi" di depan PM)
         $reqWaitAtasan2 = TravelRequest::create([
             'requester_employee_id' => $staffBudi->id,
             'origin_city_id' => $cityJakarta->id,
@@ -234,6 +268,50 @@ class DatabaseSeeder extends Seeder
             'status' => 'Menunggu Persetujuan Atasan',
         ]);
         TravelAssignee::create(['travel_request_id' => $reqWaitAtasan2->id, 'employee_id' => $staffBudi->id, 'is_leader' => true]);
+
+        // [SKENARIO 6B] Antrean Approval Level 2: Kepala Bidang (Disetujui Kasi, Menunggu Kabid)
+        $reqWaitKabid = TravelRequest::create([
+            'requester_employee_id' => $staffCitra->id,
+            'origin_city_id' => $cityJakarta->id,
+            'destination_city_id' => $cityYogyakarta->id,
+            'start_date' => $today->copy()->addDays(7)->format('Y-m-d'),
+            'end_date' => $today->copy()->addDays(9)->format('Y-m-d'),
+            'purpose' => 'Sinkronisasi Rencana Kerja Anggaran Bidang Evaluasi',
+            'estimated_total_cost' => 3040000,
+            'status' => 'Menunggu Persetujuan Kabid',
+        ]);
+        TravelAssignee::create(['travel_request_id' => $reqWaitKabid->id, 'employee_id' => $staffCitra->id, 'is_leader' => true]);
+        Approval::create([
+            'travel_request_id' => $reqWaitKabid->id,
+            'approver_employee_id' => $atasan->id,
+            'status' => 'Disetujui',
+            'notes' => 'Disetujui di tingkat Seksi, dilanjutkan ke Kepala Bidang Program.',
+        ]);
+
+        // [SKENARIO 6C] Antrean Approval Level 3: Kepala Dinas (Disetujui Kasi & Kabid, Menunggu Kadis untuk Terbit SPPD)
+        $reqWaitKadis = TravelRequest::create([
+            'requester_employee_id' => $staffAndi->id,
+            'origin_city_id' => $cityJakarta->id,
+            'destination_city_id' => $cityDenpasar->id,
+            'start_date' => $today->copy()->addDays(12)->format('Y-m-d'),
+            'end_date' => $today->copy()->addDays(15)->format('Y-m-d'),
+            'purpose' => 'Forum Konsultasi Publik Pelayanan Prima Antardaerah',
+            'estimated_total_cost' => 5400000,
+            'status' => 'Menunggu Persetujuan Kadis',
+        ]);
+        TravelAssignee::create(['travel_request_id' => $reqWaitKadis->id, 'employee_id' => $staffAndi->id, 'is_leader' => true]);
+        Approval::create([
+            'travel_request_id' => $reqWaitKadis->id,
+            'approver_employee_id' => $atasan->id,
+            'status' => 'Disetujui',
+            'notes' => 'Disetujui oleh Kepala Seksi.',
+        ]);
+        Approval::create([
+            'travel_request_id' => $reqWaitKadis->id,
+            'approver_employee_id' => $manager->id,
+            'status' => 'Disetujui',
+            'notes' => 'Disetujui oleh Kepala Bidang, mohon persetujuan akhir dan penerbitan SPPD oleh Kepala Dinas.',
+        ]);
 
         // -------------------------------------------------------------------------
         // C. MODUL ADMIN TRAVEL (TUGAS: 2 ANTREAN UNTUK GENERATE SPPD & BATALKAN)

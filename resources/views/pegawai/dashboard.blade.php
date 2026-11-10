@@ -62,15 +62,24 @@
                 $activeNum = $activeTrip->sppd_number ?? ('PD-'.strtoupper(substr($activeTrip->id, 0, 8)));
                 $activeCity = $activeTrip->destinationCity?->city_name ?? 'Dinas Luar';
 
-                $isApprovalDone = in_array($status, ['Disetujui', 'Siap Berangkat', 'Menunggu Verifikasi LPJ', 'Selesai']);
+                $isSubmitted = !in_array($status, ['Draft', 'draft']);
+                $isKadisDone = in_array($status, ['Disetujui', 'Siap Berangkat', 'Menunggu Verifikasi LPJ', 'Selesai']);
                 $isLogisticsDone = in_array($status, ['Siap Berangkat', 'Menunggu Verifikasi LPJ', 'Selesai']);
                 $isLpjDone = ($status === 'Selesai');
 
+                $approvalSublabel = match($status) {
+                    'Menunggu Persetujuan Atasan' => 'Review Kasi',
+                    'Menunggu Persetujuan Kabid' => 'Review Kabid',
+                    'Menunggu Persetujuan Kadis' => 'Review Kadis',
+                    'Direvisi' => 'Perlu Revisi',
+                    default => ($isKadisDone ? 'Disetujui Final' : '-')
+                };
+
                 $steps = [
-                    ['label' => 'Draft Pengajuan', 'sublabel' => \Carbon\Carbon::parse($activeTrip->created_at)->translatedFormat('d M'), 'status' => 'completed'],
-                    ['label' => 'Persetujuan Atasan', 'sublabel' => $isApprovalDone ? 'Disetujui' : ($status === 'Menunggu Persetujuan Atasan' ? 'Menunggu Review' : '-'), 'status' => $isApprovalDone ? 'completed' : ($status === 'Menunggu Persetujuan Atasan' ? 'current' : 'upcoming')],
-                    ['label' => 'Logistik & SPPD', 'sublabel' => $isLogisticsDone ? 'Terbit' : ($status === 'Disetujui' ? 'Input Tiket' : '-'), 'status' => $isLogisticsDone ? 'completed' : ($status === 'Disetujui' ? 'current' : 'upcoming')],
-                    ['label' => 'Pelaksanaan & LPJ', 'sublabel' => $isLpjDone ? 'Selesai Sah' : ($status === 'Menunggu Verifikasi LPJ' ? 'Verifikasi' : ($status === 'Siap Berangkat' ? 'Berjalan' : '-')), 'status' => $isLpjDone ? 'completed' : (in_array($status, ['Siap Berangkat', 'Menunggu Verifikasi LPJ']) ? 'current' : 'upcoming')],
+                    ['label' => 'Pengajuan & Dokumen', 'sublabel' => $isSubmitted ? 'Terkirim' : 'Draft', 'status' => $isSubmitted ? 'completed' : 'current'],
+                    ['label' => 'Persetujuan Berjenjang', 'sublabel' => $approvalSublabel, 'status' => $isKadisDone ? 'completed' : (in_array($status, ['Menunggu Persetujuan Atasan', 'Menunggu Persetujuan Kabid', 'Menunggu Persetujuan Kadis', 'Direvisi']) ? 'current' : 'upcoming')],
+                    ['label' => 'Terbit SPPD & Logistik', 'sublabel' => $isLogisticsDone ? 'Tiket Siap' : ($status === 'Disetujui' ? 'Input Tiket' : '-'), 'status' => $isLogisticsDone ? 'completed' : ($status === 'Disetujui' ? 'current' : 'upcoming')],
+                    ['label' => 'Pelaksanaan & LPJ', 'sublabel' => $isLpjDone ? 'Disahkan' : ($status === 'Menunggu Verifikasi LPJ' ? 'Verifikasi' : ($status === 'Revisi LPJ' ? 'Revisi LPJ' : ($status === 'Siap Berangkat' ? 'Sedang Jalan' : '-'))), 'status' => $isLpjDone ? 'completed' : (in_array($status, ['Siap Berangkat', 'Menunggu Verifikasi LPJ', 'Revisi LPJ']) ? 'current' : 'upcoming')],
                 ];
             @endphp
             <div class="flex items-start justify-between gap-3 mb-4">

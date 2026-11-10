@@ -199,7 +199,7 @@ class PermissionMatrixService
             return 'Admin';
         }
 
-        if (str_contains($position, 'kepala dinas') || str_contains($position, 'kadis')) {
+        if (str_contains($position, 'kepala dinas') || str_contains($position, 'kadis') || $employee->grade === 'Director') {
             return 'Kadis';
         }
 
@@ -207,7 +207,7 @@ class PermissionMatrixService
             return 'Kabid';
         }
 
-        if ($employee->grade === 'Manager' || str_contains($position, 'atasan')) {
+        if ($employee->grade === 'Manager' || $employee->grade === 'Supervisor' || str_contains($position, 'atasan') || str_contains($position, 'kasi') || str_contains($position, 'seksi')) {
             return 'Atasan';
         }
 
